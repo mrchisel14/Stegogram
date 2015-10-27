@@ -73,8 +73,7 @@ public class ReceiverActivity extends AppCompatActivity {
     }
 
     void decodeButtonOnClick() {
-        path_name = imageSelect.getText().toString();
-        password = imageSelect.getText().toString();
+        password = etpassword.getText().toString();
 
         if (path_name == null || path_name.matches("")) {
             Toast.makeText(this, "No image selected", Toast.LENGTH_SHORT);
@@ -90,7 +89,7 @@ public class ReceiverActivity extends AppCompatActivity {
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         Log.d("Debug: ", "In On Activity Result");
-        if (resultCode == PICK_IMAGE) {
+        if (requestCode == PICK_IMAGE && resultCode == RESULT_OK) {
             Log.d("Debug: ", "In Pick Image");
             if(resultCode == Activity.RESULT_OK) {
                 Log.d("Debug: ", "Result OKay");
