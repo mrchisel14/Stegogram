@@ -5,10 +5,8 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.Intent;
-import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -18,15 +16,12 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
-import java.io.File;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
 /**
  * Created by Shawn on 10/12/2015.
  */
 public class SelectImageDialogFragment extends DialogFragment {
     String path_name = null;
+    Uri imageUri = null;
     int PICK_IMAGE = 1, CAPTURE_IMAGE = 2;
     private Uri fileUri;
     EditText path;
@@ -34,7 +29,7 @@ public class SelectImageDialogFragment extends DialogFragment {
 
     // Container Activity must implement this interface
     public interface OnDialogDismissListener {
-        void onDialogDismissListener(String path);
+        void onDialogDismissListener(Uri image_uri);
     }
 
     @Override
@@ -74,7 +69,7 @@ public class SelectImageDialogFragment extends DialogFragment {
             public void onClick(View v) {
                 if (path_name != null) {
                     // Call Activity back and pass path_name
-                    mCallback.onDialogDismissListener(path_name);
+                    mCallback.onDialogDismissListener(imageUri);
                     SelectImageDialogFragment.this.getDialog().cancel();
                 } else {
                     Toast toast = Toast.makeText(getActivity(), "Image path not selected", Toast.LENGTH_SHORT);
@@ -109,7 +104,11 @@ public class SelectImageDialogFragment extends DialogFragment {
         // create Intent to take a picture and return control to the calling application
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 
-        fileUri = getOutputMediaFileUri(); // create a file to save the image
+        fileUri = Utilities.getOutputMediaFileUri(getActivity()); // create a file to save the image
+        if(fileUri == null){
+            Toast.makeText(getActivity(), "An Error Occurred", Toast.LENGTH_SHORT).show();
+            return null;
+        }
         intent.putExtra(MediaStore.EXTRA_OUTPUT, fileUri); // set the image file name
 
         // start the image capture Intent
@@ -118,12 +117,13 @@ public class SelectImageDialogFragment extends DialogFragment {
     }
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        Log.d("Debug: ", "In On Activity Result");
-            if (resultCode == PICK_IMAGE) {
+        Log.d("Debug: ", "In On Activity Result. Result Code = " + resultCode);
+            if (requestCode == PICK_IMAGE) {
                 Log.d("Debug: ", "In Pick Image");
                 if(resultCode == Activity.RESULT_OK) {
                     Log.d("Debug: ", "Result OKay");
-                    path_name = getRealPathFromURI(data.getData());
+                    imageUri = data.getData();
+                    path_name = Utilities.getRealPathFromURI(getActivity(), data.getData());
                     if(path_name != null) {
                         path.setText(path_name);
                         Log.d("Debug: ", "Path Name = " + path_name);
@@ -134,48 +134,20 @@ public class SelectImageDialogFragment extends DialogFragment {
                 else
                     Toast.makeText(getActivity(), "Failed retrieving data from activity", Toast.LENGTH_SHORT).show();
             }
-            else if(resultCode == CAPTURE_IMAGE) {
+            if(requestCode == CAPTURE_IMAGE) {
+                Log.d("Debug: ", "In Capture Image");
                 if(resultCode == Activity.RESULT_OK) {
-                    path_name = getRealPathFromURI(fileUri);
-                    if(path_name != null)
+                    Log.d("Debug: ", "In Capture Image Result Okay");
+                    path_name = fileUri.getPath();
+                    imageUri = data.getData();
+                    if(path_name != null) {
+                        Log.d("Debug: ", "Pathname  = " + path_name);
                         path.setText(path_name);
+                    }
                     else
                         Toast.makeText(getActivity(), "Failed selecting image from Camera", Toast.LENGTH_SHORT).show();
                 }
             }
     }
-    Uri getOutputMediaFileUri(){
-        File mediaStorageDir;
-        if(isExternalStorageWritable()) {
-            Log.d("Debug: ", "Can write to external storage");
-            mediaStorageDir = new File(Environment.getExternalStorageDirectory(), "Stegogram");
-        }
-        else
-            mediaStorageDir = getActivity().getFilesDir();
-        Log.d("Debug: ", "Media Storage Directory = " + mediaStorageDir.getPath());
-        if (! mediaStorageDir.exists()){
-            if (! mediaStorageDir.mkdirs()){
-                Log.d("MyCameraApp", "failed to create directory");
-                return null;
-            }
-        }
-        File mediaFile;
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        mediaFile = new File(mediaStorageDir.getPath() + File.separator +
-                "IMG_"+ timeStamp + ".jpg");
-        return Uri.fromFile(mediaFile);
-    }
-    public String getRealPathFromURI(Uri uri) {
-        Cursor cursor = getActivity().getContentResolver().query(uri, null, null, null, null);
-        cursor.moveToFirst();
-        int idx = cursor.getColumnIndex(MediaStore.Images.ImageColumns.DATA);
-        return cursor.getString(idx);
-    }
-    public boolean isExternalStorageWritable() {
-        String state = Environment.getExternalStorageState();
-        if (Environment.MEDIA_MOUNTED.equals(state)) {
-            return true;
-        }
-        return false;
-    }
+
 }

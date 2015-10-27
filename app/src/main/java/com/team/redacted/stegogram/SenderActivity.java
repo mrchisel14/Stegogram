@@ -5,6 +5,7 @@ import android.app.Fragment;
 import android.app.FragmentManager;
 import android.content.Intent;
 import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.provider.ContactsContract;
 import android.support.v7.app.AppCompatActivity;
@@ -138,11 +139,11 @@ public class SenderActivity extends AppCompatActivity implements SelectImageDial
         SelectImageDialogFragment fragment = new SelectImageDialogFragment();
         fragment.show(getFragmentManager(), "SelectImage");
     }
-    public void onDialogDismissListener(String path){
-        if(path != null){
+    public void onDialogDismissListener(Uri image){
+        if(image != null){
             message = message_box.getText().toString();
             password_str = password.getText().toString();
-            Utilities.createStegogramRequest(this, path, password_str, message, Utilities.ENCODE_IMAGE);
+            Utilities.createStegogramRequest(this, image, password_str, message, Utilities.ENCODE_IMAGE);
         }
         else
             Toast.makeText(this, "No path selected.", Toast.LENGTH_SHORT).show();
