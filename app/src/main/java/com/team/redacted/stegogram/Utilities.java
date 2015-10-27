@@ -2,8 +2,12 @@ package com.team.redacted.stegogram;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Environment;
 import android.os.SystemClock;
+import android.provider.MediaStore;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -90,5 +94,19 @@ public class Utilities {
     }
     public static void sendPictureMessage(String encoded_image_path){
 
+    }
+
+    public static String getRealPathFromURI(Activity a, Uri uri) {
+        Cursor cursor = a.getContentResolver().query(uri, null, null, null, null);
+        cursor.moveToFirst();
+        int idx = cursor.getColumnIndex(MediaStore.Images.ImageColumns.DATA);
+        return cursor.getString(idx);
+    }
+    public static boolean isExternalStorageWritable() {
+        String state = Environment.getExternalStorageState();
+        if (Environment.MEDIA_MOUNTED.equals(state)) {
+            return true;
+        }
+        return false;
     }
 }
