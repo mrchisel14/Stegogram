@@ -2,13 +2,18 @@ package com.team.redacted.stegogram;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.net.Uri;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.method.HideReturnsTransformationMethod;
+import android.text.method.PasswordTransformationMethod;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -16,11 +21,13 @@ public class ReceiverActivity extends AppCompatActivity {
     int PICK_IMAGE = 1;
     String path_name, password;
     EditText imageSelect, etpassword;
+    Uri imageUri = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_receiver);
+        final CheckBox checkb = (CheckBox)findViewById(R.id.view_password);
         final Button selectButton = (Button)findViewById(R.id.sel);
         Button decodeButton = (Button)findViewById(R.id.decode);
         imageSelect = (EditText)findViewById(R.id.pathname);
@@ -40,7 +47,15 @@ public class ReceiverActivity extends AppCompatActivity {
             }
         });
 
-
+        checkb.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (!isChecked) {
+                    etpassword.setTransformationMethod(PasswordTransformationMethod.getInstance());
+                } else
+                    etpassword.setTransformationMethod(HideReturnsTransformationMethod.getInstance());
+            }
+        });
     }
 
     @Override
@@ -85,15 +100,18 @@ public class ReceiverActivity extends AppCompatActivity {
             Toast.makeText(this, "No password specified", Toast.LENGTH_SHORT);
         }
 
+        Utilities.createStegogramRequest(this, imageUri, password, null, Utilities.DECODE_IMAGE);
+
     }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        Log.d("Debug: ", "In On Activity Result");
-        if (resultCode == PICK_IMAGE) {
+        Log.d("Debug: ", "In On Activity Result. Result Code = " + resultCode);
+        if (requestCode == PICK_IMAGE) {
             Log.d("Debug: ", "In Pick Image");
             if(resultCode == Activity.RESULT_OK) {
                 Log.d("Debug: ", "Result OKay");
+                imageUri = data.getData();
                 path_name = Utilities.getRealPathFromURI(this, data.getData());
                 if(path_name != null) {
                     imageSelect.setText(path_name);
@@ -107,4 +125,5 @@ public class ReceiverActivity extends AppCompatActivity {
         }
 
     }
+
 }
