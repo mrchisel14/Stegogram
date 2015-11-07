@@ -10,6 +10,7 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Environment;
 import android.os.SystemClock;
 import android.provider.DocumentsContract;
@@ -20,6 +21,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
@@ -30,26 +32,27 @@ import java.util.Date;
  */
 public class Utilities {
     public static int DECODE_IMAGE = 0, ENCODE_IMAGE = 1;
-    static int index = 0, prog_val_encode [] = {10, 40, 40, 10}, prog_val_decode[] = {40, 40, 20};
+    static int index = 0, prog_val_encode [] = {0, 10, 40, 40, 10}, prog_val_decode[] = {40, 40, 20};
     public final static String status_encode [] = {
-      "Converting Image", "Encrypting Data", "Encoding Data", "Sending Image"
+      "Converting Image", "Encrypting Data", "Encoding Data", "Sending Image", "Finished"
     }, status_decode [] = {
           "Decoding Image", "Decrypting Data", "Finishing"
     };
 
-    public static int createStegogramRequest(final Activity a, final Uri image_uri, String password, String message, final int type){
+    public static int createStegogramRequest(final Activity a, final String recipients, final Uri image_uri, String password, String message, final int type){
         final ProgressDialog fragment = new ProgressDialog();
-        fragment.setArgs(a, image_uri, password, message, type);
+        fragment.setArgs(a, recipients, image_uri, password, message, type);
         fragment.show(a.getFragmentManager(), "ProgressBar");
         return 0;
     }
-    public static int performRequest(final ProgressDialog fragment, final Activity a, final Uri image_uri, String password, String message, final int type){
-        View v = fragment.getView();
+    public static int performRequest(final ProgressDialog fragment, final Activity a, final String recipients, final Uri image_uri, String password, String message, final int type){
+        View v = fragment.view;
         if(v == null){
             Log.d("Debug", "V is null");
             return -1;
         }
         final ProgressBar prog_bar = (ProgressBar) v.findViewById(R.id.progress_bar);
+        prog_bar.setVisibility(View.INVISIBLE);
         final TextView prog_status = (TextView)v.findViewById(R.id.progress_text);
         prog_bar.setMax(100);
         prog_bar.setProgress(0);
@@ -57,6 +60,7 @@ public class Utilities {
             @Override
             protected void onPreExecute() {
                 super.onPreExecute();
+                prog_bar.setVisibility(View.VISIBLE);
                 index = 0;
             }
 
@@ -67,7 +71,9 @@ public class Utilities {
                     publishProgress();
                 }
                 else if(type == ENCODE_IMAGE){
+                    Log.d("Debug", "Encode Image Entered");
                     publishProgress();
+
                     Bitmap png_image = null;
                     try{
                         Bitmap image = MediaStore.Images.Media.getBitmap(a.getContentResolver(), image_uri);
@@ -75,27 +81,37 @@ public class Utilities {
                     }catch (Exception e){
                         e.printStackTrace();
                     }
-
+                    SystemClock.sleep(5000);
+                    Log.d("Debug", "Finished image compression");
                     if(png_image != null){
                         Bitmap encoded_image = null;
+                        String encrypted_message = null;
+                        Log.d("Debug", "Png Not null");
                         publishProgress();
                         /*Call Encryption*/
                         SystemClock.sleep(5000);
+                        Log.d("Debug", "After Encryption");
                         publishProgress();
                         /*Call Encoding encoded_path = func()*/
                         SystemClock.sleep(5000);
+                        Log.d("Debug", "After Encoding");
                         publishProgress();
                         /*Send Image*/
                         SystemClock.sleep(5000);
-                        sendPictureMessage(encoded_image);
+                        sendPictureMessage(a, recipients, png_image);
+                        Log.d("Debug", "After Send Image");
+                        publishProgress();
                     }
                     else{
+                        Log.d("Debug", "Failed Converting Image");
                         Toast.makeText(a,"Failed converting image", Toast.LENGTH_SHORT);
                     }
                 }
                 return null;
             }
-            protected void onProgressUpdate(Integer... progress) {
+            protected void onProgressUpdate(Void... progress) {
+                super.onProgressUpdate();
+                Log.d("Debug", "On Progress Update");
                 if(type == ENCODE_IMAGE) {
                     prog_bar.incrementProgressBy(prog_val_encode[index]);
                     prog_status.setText(status_encode[index]);
@@ -107,10 +123,12 @@ public class Utilities {
                 ++index;
             }
 
-            protected void onPostExecute(String result) {
+            protected void onPostExecute(Void result) {
+                Log.d("Debug", "On Post Execute");
                 fragment.dismiss();
+                a.finish();
             }
-        };
+        }.execute();
         return -1;
     }
     public static Bitmap convertJPEGToPNG(Context c, Bitmap image){
@@ -118,7 +136,7 @@ public class Utilities {
             Uri fileUri = getOutputMediaFileUri(c);
             File file = new File(fileUri.getPath());
             if(!file.exists())file.createNewFile();
-            FileOutputStream out = new FileOutputStream(getRealPathFromURI(c, fileUri));
+            FileOutputStream out = new FileOutputStream(fileUri.getPath());
             image.compress(Bitmap.CompressFormat.PNG, 100, out); //100-best quality
             out.close();
         } catch (Exception e) {
@@ -127,8 +145,23 @@ public class Utilities {
 
         return image;
     }
-    public static void sendPictureMessage(Bitmap encoded_image){
-
+    public static void sendPictureMessage(Context c, String recipients, Bitmap encoded_image){
+        Log.d("Debug", "In Send Picture Message");
+        Uri image = getImageUri(c, encoded_image);
+        if(image == null){
+            Log.d("Debug", "Image is null");
+            return;
+        }
+        Intent picMessageIntent = new Intent(Intent.ACTION_SEND);
+        picMessageIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        Bundle extras = new Bundle();
+        extras.putString("address", recipients);
+        extras.putString(Intent.EXTRA_STREAM, image.toString());
+        //picMessageIntent.putExtra("address", recipients);
+        //picMessageIntent.putExtra(Intent.EXTRA_STREAM, image);
+        picMessageIntent.putExtras(extras);
+        picMessageIntent.setType("image/png");
+        c.startActivity(picMessageIntent);
     }
     public static Uri getOutputMediaFileUri(Context c){
         File mediaStorageDir;
@@ -222,5 +255,14 @@ public class Utilities {
             return true;
         }
         return false;
+    }
+    public static Uri getImageUri(Context inContext, Bitmap inImage) {
+        if(inImage != null) {
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+            String path = MediaStore.Images.Media.insertImage(inContext.getContentResolver(), inImage, "IMG_" + timeStamp + ".jpg", null);
+            return Uri.parse(path);
+        }
+        return null;
     }
 }
