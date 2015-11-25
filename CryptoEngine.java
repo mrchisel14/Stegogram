@@ -25,7 +25,7 @@ public class CryptoEngine
 	
 	@param password for encrypting text String.
 	@param text String to be hidden inside image.
-	@param file pathway for image in which text will be hidden.
+	@param image in which text will be hidden.
 	
 	@return the File Path of the saved image
 	*/
@@ -41,8 +41,7 @@ public class CryptoEngine
 		original.recycle();
 		
 		/*add marker characters to begining and end of string*/
-		String terminal = Character.toString('\u03D1');
-		message = terminal.concat(message);
+		String terminal = Character.toString('\u0');
 		message = message.concat(terminal);
 		
 		/*Image file must be of sufficient size to hold the message,
@@ -103,7 +102,7 @@ public class CryptoEngine
 			
 			//insert bit 0 into blue
 			int blue = Color.blue(pixel_color);
-			int blue_insert = (message_data[i] & 0x2) >>> 1;
+			int blue_insert = (message_data[i] & 0x1);
 			blue = blue | blue_insert;
 			
 			//write final value to pixels
@@ -119,15 +118,42 @@ public class CryptoEngine
 	/**
 	Decodes a text String from an image file
 	
-	@param file pathwy for image from which text will be decoded.
+	@param Image from which text will be decoded.
 	
 	@return decoded and decrypted text string.
 	*/
-	public static String receiveStegogram(String imgPath)
+	public static String receiveStegogram(Bitmap original)
 	{
-	
-	
-	
+		int width = encodedImage.width();
+		int height = encodedImage.height();
+		int[] pixels = new int[width * height];
+		int[] message_data = new int[pixels.length() / 4];
+		char[] message = new char[message_data.length() / 4]
+		char last_char = 'a';
+		
+		//ensures stay withing bounds of pixels[]
+		int count = 0;
+		do
+		{
+			int pixel_color = pixels[count];
+			int alpha = Color.alpha(pixel_color);
+			int red = Color.red(pixel_color);
+			int blue = Color.blue(pixel_color);
+			int green = Color.green(pixel_color);
+			
+			message_data[count] = ((alpha & 0x1) << 3) | ((red & 0x1) << 2) | ((blue & 0x1) << 1) | (green & 0x1);
+			
+			//every four pixels is a character
+			//extract the character
+			if(count % 4 == 0 && count != 0)
+			{
+				last_char = (message_data[count - 3] << 12) | (messagemessage_data[count - 2] << 8) | (messagemessage_data[count -1] << 4) | messagemessage_data[count];
+				message[(count / 4) - 1] = last_char;
+			}
+			
+			
+			++count;
+		}while(last_char != '\0' && count < pixels.length())
 	
 	
 	
