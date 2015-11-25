@@ -12,6 +12,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Looper;
 import android.os.SystemClock;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
@@ -67,6 +68,7 @@ public class Utilities {
             @Override
             protected Void doInBackground(String... params) {
                 // **Code**
+                Looper.prepare();
                 if(type == DECODE_IMAGE){
                     publishProgress();
                 }
@@ -148,18 +150,25 @@ public class Utilities {
     public static void sendPictureMessage(Context c, String recipients, Bitmap encoded_image){
         Log.d("Debug", "In Send Picture Message");
         Uri image = getImageUri(c, encoded_image);
+        String path = getRealPathFromURI(c, image);
         if(image == null){
             Log.d("Debug", "Image is null");
+            new Toast(c).makeText(c,"Failed to Send Picture Message", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if(path == null) {
+            Log.d("Debug", "Failed to get real path in send Activity");
+            new Toast(c).makeText(c,"Failed to Send Picture Message", Toast.LENGTH_SHORT).show();
             return;
         }
         Intent picMessageIntent = new Intent(Intent.ACTION_SEND);
         picMessageIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        Bundle extras = new Bundle();
-        extras.putString("address", recipients);
-        extras.putString(Intent.EXTRA_STREAM, image.toString());
+        //Bundle extras = new Bundle();
+        //extras.putString("address", recipients);
+        //extras.putString(Intent.EXTRA_STREAM, image.toString());
         //picMessageIntent.putExtra("address", recipients);
-        //picMessageIntent.putExtra(Intent.EXTRA_STREAM, image);
-        picMessageIntent.putExtras(extras);
+        picMessageIntent.putExtra(Intent.EXTRA_STREAM, image);
+       // picMessageIntent.putExtras(extras);
         picMessageIntent.setType("image/png");
         c.startActivity(picMessageIntent);
     }
@@ -221,25 +230,46 @@ public class Utilities {
             }
             // SDK > 19 (Android 4.4)
             else{
-                String wholeID = DocumentsContract.getDocumentId(uri);
+                if (String.valueOf(uri).contains("documents")) {
 
-                // Split at colon, use second item in the array
-                String id = wholeID.split(":")[1];
+                    String wholeID = DocumentsContract.getDocumentId(uri);
 
-                String[] column = { MediaStore.Images.Media.DATA };
+                    // Split at colon, use second item in the array
+                    String id = wholeID.split(":")[1];
 
-                // where id is equal to
-                String sel = MediaStore.Images.Media._ID + "=?";
+                    String[] column = { MediaStore.Images.Media.DATA };
 
-                Cursor cursor = c.getContentResolver().query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                        column, sel, new String[]{ id }, null);
+                    // where id is equal to
+                    String sel = MediaStore.Images.Media._ID + "=?";
 
-                int columnIndex = cursor.getColumnIndex(column[0]);
+                    Cursor cursor = c.getContentResolver().query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                            column, sel, new String[]{ id }, null);
 
-                if (cursor.moveToFirst()) {
-                    ret = cursor.getString(columnIndex);
+                    int columnIndex = cursor.getColumnIndex(column[0]);
+
+                    if (cursor.moveToFirst()) {
+                        ret = cursor.getString(columnIndex);
+                    }
+                    cursor.close();
+
+                } else {
+                    String[] proj = { MediaStore.Images.Media.DATA };
+
+                    CursorLoader cursorLoader = new CursorLoader(
+                            c,
+                            uri, proj, null, null, null);
+                    Cursor cursor = cursorLoader.loadInBackground();
+
+                    if(cursor != null){
+                        int column_index =
+                                cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+                        cursor.moveToFirst();
+                        ret = cursor.getString(column_index);
+                    }
+                    cursor.close();
+
                 }
-                cursor.close();
+
             }
         }catch (Exception e){
             Log.d("Debug", e.getMessage());
@@ -257,11 +287,17 @@ public class Utilities {
         return false;
     }
     public static Uri getImageUri(Context inContext, Bitmap inImage) {
-        if(inImage != null) {
-            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-            String path = MediaStore.Images.Media.insertImage(inContext.getContentResolver(), inImage, "IMG_" + timeStamp + ".jpg", null);
-            return Uri.parse(path);
+        Log.d("Debug", "In get image Uri");
+        try{
+            if(inImage != null) {
+                ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+                String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+                String path = MediaStore.Images.Media.insertImage(inContext.getContentResolver(), inImage, "IMG_" + timeStamp + ".png", null);
+                Log.d("Debug", "Image Uri path:" + path);
+                return Uri.parse(path);
+            }
+        }catch(Exception e){
+              e.printStackTrace();
         }
         return null;
     }
