@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/dark_theme_color">
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <TextView
+                android:id="@+id/dialog_title"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:background="@color/light_theme_color"
+                android:textSize="30dp"
+                android:textColor="#FFFFFF"
+                android:gravity="center"
+                android:text="Decoded Message"/>
+            <TextView
+                android:id="@+id/decoded_message"
+                android:layout_below="@id/dialog_title"
+                android:layout_margin="10dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="15dp"
+                android:text="DUMMY MESSAGE"/>
+            <Button
+                android:id="@+id/close_button"
+                android:layout_width="250dp"
+                android:layout_height="wrap_content"
+                android:text="CLOSE"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/button_main"
+                android:layout_below="@id/decoded_message"
+                android:layout_centerHorizontal="true"/>
+        </RelativeLayout>
+    </ScrollView>
+
+</RelativeLayout>

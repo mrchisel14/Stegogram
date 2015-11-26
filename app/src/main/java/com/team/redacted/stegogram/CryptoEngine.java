@@ -1,10 +1,22 @@
-package com.cen.steganography;
+package com.team.redacted.stegogram;
 
+import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
+import java.security.SecureRandom;
+import java.security.spec.KeySpec;
+
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapFactory.Options;
 import android.graphics.Color;
+
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.PBEKeySpec;
+import javax.crypto.spec.SecretKeySpec;
 
 
 /**
@@ -29,13 +41,14 @@ public class CryptoEngine
 	
 	@return the File Path of the saved image
 	*/
-	public static Bitmap generateStegogram(String password, String message, Bitmap original) throws IndexOutOfBoundsException	
+
+    static int CRYPT_ITR = 10000;
+	public static Bitmap generateStegogram(String password, String message, Bitmap original) throws IndexOutOfBoundsException
 	{
-		
 		//Generate an editable copy of the image.
 		Bitmap encodedImage = original.copy(Bitmap.Config.ARGB_8888, true);	//is editable
-		int width = encodedImage.width();
-		int height = encodedImage.height();
+		int width = encodedImage.getWidth();
+		int height = encodedImage.getHeight();
 		
 		//release original image resources
 		original.recycle();
@@ -49,8 +62,9 @@ public class CryptoEngine
 		start code, and end code. This verifies that the image is of
 		adequate size*/
 		// time 8 because each in will be split across four pixels.
-		if(message.length() * 4 > (height * width)
-		{throw new IndexOutOfBoundsException("Input image filesize too small to hold message String");}
+		if(message.length() * 4 > (height * width)){
+		    throw new IndexOutOfBoundsException("Input image filesize too small to hold message String");
+		}
 		
 		
 		/*convert message_data into four bit values*/
@@ -64,23 +78,21 @@ public class CryptoEngine
 			message_data[3 + 4 * i] = message.charAt(i & 0x0000000F);
 			
 		}
-		
-		
-		
+
 		/*encryption goes here*/
 		
-		/*instert message into image*/
+		/*insert message into image*/
 		
-		//Convert image pizels into an int array
+		//Convert image pixels into an int array
 		int[] pixels = new int[width * height];
-		bitmap.getPixels(pixels, 0, width, 0, 0, width, height);
+		encodedImage.getPixels(pixels, 0, width, 0, 0, width, height);
 		
 		//loop through message and pixel arrays in parral
 		//Each color has four 8 bit components
 		//Each nibble in message_data is spread out across the 
 		//lower order bits of the Color components.
 		
-		for(int i = 0; i < message_data.length(); ++i)
+		for(int i = 0; i < message_data.length; ++i)
 		{
 			int pixel_color = pixels[i];
 			
@@ -109,9 +121,9 @@ public class CryptoEngine
 			//write final value to pixels
 			pixels[i] = Color.argb(alpha, red, green, blue);
 		}
-		
-		
-		return encodedImage.setPixels(pixels, 0, width, 0, 0, width, height);
+
+        encodedImage.setPixels(pixels, 0, width, 0, 0, width, height);
+		return encodedImage;
 		
 	}//end method receiveStegogram
 
@@ -130,10 +142,48 @@ public class CryptoEngine
 	
 	
 	
-	
+	    return imgPath;
 	}//end method receiveStegogram
 
+    public static String encryptMessage(String message, String password){
+        int k_length = 256;
+        int s_length = k_length/8;
+        byte [] cipher_text;
+        String cipher_text_str = null;
+        try {
+            SecureRandom random = new SecureRandom();
+            byte[] salt = new byte[s_length];
+            random.nextBytes(salt);
+            KeySpec keySpec = new PBEKeySpec(password.toCharArray(), salt,
+                    CRYPT_ITR, k_length);
+            SecretKeyFactory keyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
+            byte[] keyBytes = keyFactory.generateSecret(keySpec).getEncoded();
+            SecretKey key = new SecretKeySpec(keyBytes, "AES");
 
+            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+            byte[] iv = new byte[cipher.getBlockSize()];
+            random.nextBytes(iv);
+            IvParameterSpec ivParams = new IvParameterSpec(iv);
+            cipher.init(Cipher.ENCRYPT_MODE, key, ivParams);
+            byte[] ciphertext = cipher.doFinal(message.getBytes("UTF-16"));//UTF-16 increases difficulty of password cracking over UTF-8
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream( );
+            out.write(iv);//concatenate IV
+            out.write(salt);//concatenate Salt
+            out.write(ciphertext);//concatenate Cipher Text
+            cipher_text = out.toByteArray();
+            out.close();
+            cipher_text_str = new String(cipher_text);
+        }catch (Exception e){
+            e.printStackTrace();
+            return null;
+        }
+        return cipher_text_str;
+    }
+	public static String decryptmessage(String ciphertext){
+		String plaintext = ciphertext;
+		return plaintext;
+	}
 
 
 }//end class CryptoEngine

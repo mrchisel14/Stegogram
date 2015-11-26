@@ -42,6 +42,7 @@ public class Utilities {
           "Decoding Image", "Decrypting Data", "Finishing"
     };
     static Uri png_uri = null;
+    static String plaintext = null;
 
     public static int createStegogramRequest(final Activity a, final Uri image_uri, String password, String message, final int type){
         final ProgressDialog fragment = new ProgressDialog();
@@ -73,11 +74,12 @@ public class Utilities {
                 // **Code**
                 Looper.prepare();
                 if(type == DECODE_IMAGE){
-                    String plaintext = null;
+                    String ciphertext = null;
                     publishProgress();
                     SystemClock.sleep(5000);
-                    //CryptoEngine.receiveStegogram(image_uri.getPath());
+                    ciphertext = CryptoEngine.receiveStegogram(image_uri.getPath());
                     publishProgress();
+                    plaintext = CryptoEngine.decryptmessage(ciphertext);
                     SystemClock.sleep(5000);
                     publishProgress();
                 }
@@ -132,14 +134,31 @@ public class Utilities {
                 else if(type == DECODE_IMAGE){
                     prog_bar.incrementProgressBy(prog_val_decode[index]);
                     prog_status.setText(status_decode[index]);
+                    if(plaintext != null){
+                        DisplayMessageDialogFragment f = new DisplayMessageDialogFragment();
+                        f.decoded_message = plaintext;
+                        plaintext = null;
+                        f.show(a.getFragmentManager(), "Message");
+                    }
                 }
                 ++index;
             }
 
             protected void onPostExecute(Void result) {
                 Log.d("Debug", "On Post Execute");
-                fragment.dismiss();
-                a.finish();
+                if(type == DECODE_IMAGE){
+                    fragment.dismiss();
+                    if(plaintext != null){
+                        DisplayMessageDialogFragment f = new DisplayMessageDialogFragment();
+                        f.decoded_message = plaintext;
+                        plaintext = null;
+                        f.show(a.getFragmentManager(), "Message");
+                    }
+                }
+                else {
+                    fragment.dismiss();
+                    a.finish();
+                }
             }
         }.execute();
         return -1;

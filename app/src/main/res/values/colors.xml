@@ -2,4 +2,5 @@
 <resources>
     <item name="dark_theme_color" type="color">#696969</item>
     <item name="light_theme_color" type="color">#939393</item>
+    <item name="label_text" type="color">#FFFFFF</item>
 </resources>

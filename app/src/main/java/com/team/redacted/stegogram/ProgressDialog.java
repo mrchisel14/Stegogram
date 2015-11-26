@@ -16,7 +16,7 @@ import android.view.View;
 public class ProgressDialog extends DialogFragment {
     Activity a;
     Uri image_uri;
-    String password, message, recipients;
+    String password, message;
     int type;
     View view;
     @Override
@@ -33,14 +33,13 @@ public class ProgressDialog extends DialogFragment {
     public void onStart() {
         super.onStart();
         Log.d("Debug", "Calling performRequest");
-        Utilities.performRequest(this, a, recipients, image_uri, password, message, type);
+        Utilities.performRequest(this, a, image_uri, password, message, type);
     }
-    public void setArgs(final Activity a, final String recs, final Uri image_uri, String password, String message, final int type){
+    public void setArgs(final Activity a, final Uri image_uri, String password, String message, final int type){
         this.a = a;
         this.image_uri = image_uri;
         this.password = password;
         this.message = message;
         this.type = type;
-        this.recipients = recs;
     }
 }
