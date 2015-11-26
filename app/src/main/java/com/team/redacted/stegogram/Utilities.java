@@ -43,13 +43,13 @@ public class Utilities {
     };
     static Uri png_uri = null;
 
-    public static int createStegogramRequest(final Activity a, final String recipients, final Uri image_uri, String password, String message, final int type){
+    public static int createStegogramRequest(final Activity a, final Uri image_uri, String password, String message, final int type){
         final ProgressDialog fragment = new ProgressDialog();
-        fragment.setArgs(a, recipients, image_uri, password, message, type);
+        fragment.setArgs(a, image_uri, password, message, type);
         fragment.show(a.getFragmentManager(), "ProgressBar");
         return 0;
     }
-    public static int performRequest(final ProgressDialog fragment, final Activity a, final String recipients, final Uri image_uri, String password, String message, final int type){
+    public static int performRequest(final ProgressDialog fragment, final Activity a, final Uri image_uri, final String password, final String message, final int type){
         View v = fragment.view;
         if(v == null){
             Log.d("Debug", "V is null");
@@ -71,8 +71,14 @@ public class Utilities {
             @Override
             protected Void doInBackground(String... params) {
                 // **Code**
-                //Looper.prepare();
+                Looper.prepare();
                 if(type == DECODE_IMAGE){
+                    String plaintext = null;
+                    publishProgress();
+                    SystemClock.sleep(5000);
+                    //CryptoEngine.receiveStegogram(image_uri.getPath());
+                    publishProgress();
+                    SystemClock.sleep(5000);
                     publishProgress();
                 }
                 else if(type == ENCODE_IMAGE){
@@ -94,16 +100,18 @@ public class Utilities {
                         Log.d("Debug", "Png Not null");
                         publishProgress();
                         /*Call Encryption*/
-                        SystemClock.sleep(5000);
+                        encrypted_message = CryptoEngine.encryptMessage(message, password);
+                        Log.d("Debug", "Encrypted Text: " + encrypted_message + "\nlength: " + encrypted_message.length());
                         Log.d("Debug", "After Encryption");
                         publishProgress();
                         /*Call Encoding encoded_path = func()*/
-                        SystemClock.sleep(5000);
+                        encoded_image = CryptoEngine.generateStegogram(password, encrypted_message, png_image);
+                        convertJPEGToPNG(a, encoded_image); //This writes the file to disk
                         Log.d("Debug", "After Encoding");
                         publishProgress();
                         /*Send Image*/
                         SystemClock.sleep(5000);
-                        sendPictureMessage(a, recipients, png_image);
+                        sendPictureMessage(a);
                         Log.d("Debug", "After Send Image");
                         publishProgress();
                     }
@@ -155,7 +163,7 @@ public class Utilities {
 
         return image;
     }
-    public static void sendPictureMessage(Context c, String recipients, Bitmap encoded_image){
+    public static void sendPictureMessage(Context c){
         Log.d("Debug", "In Send Picture Message");
         Uri image = png_uri;
         String path = png_uri.getPath();
