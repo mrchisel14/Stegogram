@@ -11,11 +11,12 @@
         android:id="@+id/main_header"
         android:layout_width="match_parent"
         android:layout_height="150dp">
-        <TextView
-            android:layout_centerInParent="true"
-            android:text="@string/logo_text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+        <ImageView
+            android:id="@+id/banner_main"
+            android:layout_width="500dp"
+            android:layout_height="125dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/stegogram_banner"/>
     </RelativeLayout>
     <RelativeLayout
         android:id="@+id/main_body"

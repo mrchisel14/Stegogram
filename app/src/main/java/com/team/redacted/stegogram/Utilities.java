@@ -2,11 +2,13 @@ package com.team.redacted.stegogram;
 
 import android.app.Activity;
 import android.app.Fragment;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.CursorLoader;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -39,6 +41,7 @@ public class Utilities {
     }, status_decode [] = {
           "Decoding Image", "Decrypting Data", "Finishing"
     };
+    static Uri png_uri = null;
 
     public static int createStegogramRequest(final Activity a, final String recipients, final Uri image_uri, String password, String message, final int type){
         final ProgressDialog fragment = new ProgressDialog();
@@ -68,7 +71,7 @@ public class Utilities {
             @Override
             protected Void doInBackground(String... params) {
                 // **Code**
-                Looper.prepare();
+                //Looper.prepare();
                 if(type == DECODE_IMAGE){
                     publishProgress();
                 }
@@ -78,7 +81,7 @@ public class Utilities {
 
                     Bitmap png_image = null;
                     try{
-                        Bitmap image = MediaStore.Images.Media.getBitmap(a.getContentResolver(), image_uri);
+                        Bitmap image = BitmapFactory.decodeFile(image_uri.getPath());
                         png_image = convertJPEGToPNG(a, image);
                     }catch (Exception e){
                         e.printStackTrace();
@@ -137,10 +140,15 @@ public class Utilities {
         try {
             Uri fileUri = getOutputMediaFileUri(c);
             File file = new File(fileUri.getPath());
-            if(!file.exists())file.createNewFile();
+            if(!file.exists())
+                if(!file.createNewFile()){
+                    Log.d("Error:","Failed to create new png file");
+                }
             FileOutputStream out = new FileOutputStream(fileUri.getPath());
+            image = getResizedBitmap(image, 640);
             image.compress(Bitmap.CompressFormat.PNG, 100, out); //100-best quality
             out.close();
+            png_uri = fileUri;
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -149,8 +157,8 @@ public class Utilities {
     }
     public static void sendPictureMessage(Context c, String recipients, Bitmap encoded_image){
         Log.d("Debug", "In Send Picture Message");
-        Uri image = getImageUri(c, encoded_image);
-        String path = getRealPathFromURI(c, image);
+        Uri image = png_uri;
+        String path = png_uri.getPath();
         if(image == null){
             Log.d("Debug", "Image is null");
             new Toast(c).makeText(c,"Failed to Send Picture Message", Toast.LENGTH_SHORT).show();
@@ -170,13 +178,13 @@ public class Utilities {
         picMessageIntent.putExtra(Intent.EXTRA_STREAM, image);
        // picMessageIntent.putExtras(extras);
         picMessageIntent.setType("image/png");
-        c.startActivity(picMessageIntent);
+        c.startActivity(Intent.createChooser(picMessageIntent, null));
     }
     public static Uri getOutputMediaFileUri(Context c){
         File mediaStorageDir;
         if(isExternalStorageWritable()) {
             Log.d("Debug: ", "Can write to external storage");
-            mediaStorageDir = new File(Environment.getExternalStorageDirectory(), "/Stegogram");
+            mediaStorageDir = new File(Environment.getExternalStorageDirectory(), "/Stegogram/");
         }
         else
             mediaStorageDir = c.getFilesDir();
@@ -191,16 +199,13 @@ public class Utilities {
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         mediaFile = new File(mediaStorageDir.getPath() + File.separator +
                 "IMG_"+ timeStamp + ".jpg");
-        if(mediaFile == null){
-            Log.d("Debug", "Media File is null");
-        }
-        else
-            Log.d("Debug", "Media file is " + mediaFile.getPath().toString());
+        Log.d("Debug", "Media file is " + mediaFile.getPath());
         return Uri.fromFile(mediaFile);
     }
     public static String getRealPathFromURI(Context c, Uri uri) {
         String ret = "";
         try{
+            Log.d("Debug", "get real path from uri: " + uri.getPath());
             // SDK < API11
             if (Build.VERSION.SDK_INT < 11){
                 String[] proj = { MediaStore.Images.Media.DATA };
@@ -267,17 +272,15 @@ public class Utilities {
                         ret = cursor.getString(column_index);
                     }
                     cursor.close();
-
                 }
-
             }
         }catch (Exception e){
-            Log.d("Debug", e.getMessage());
+            Log.d("Debug", "Failed to get real path");
             e.printStackTrace();
-            return null;
+            return uri.getPath();
         }
 
-        return new File(ret).getName();
+        return ret;
     }
     public static boolean isExternalStorageWritable() {
         String state = Environment.getExternalStorageState();
@@ -286,19 +289,18 @@ public class Utilities {
         }
         return false;
     }
-    public static Uri getImageUri(Context inContext, Bitmap inImage) {
-        Log.d("Debug", "In get image Uri");
-        try{
-            if(inImage != null) {
-                ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-                String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-                String path = MediaStore.Images.Media.insertImage(inContext.getContentResolver(), inImage, "IMG_" + timeStamp + ".png", null);
-                Log.d("Debug", "Image Uri path:" + path);
-                return Uri.parse(path);
-            }
-        }catch(Exception e){
-              e.printStackTrace();
+    public static Bitmap getResizedBitmap(Bitmap image, int maxSize) {
+        int width = image.getWidth();
+        int height = image.getHeight();
+
+        float bitmapRatio = (float)width / (float) height;
+        if (bitmapRatio > 0) {
+            width = maxSize;
+            height = (int) (width / bitmapRatio);
+        } else {
+            height = maxSize;
+            width = (int) (height * bitmapRatio);
         }
-        return null;
+        return Bitmap.createScaledBitmap(image, width, height, true);
     }
 }

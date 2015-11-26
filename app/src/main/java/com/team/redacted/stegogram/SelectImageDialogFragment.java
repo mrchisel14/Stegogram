@@ -5,6 +5,8 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
@@ -15,6 +17,8 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.Toast;
+
+import java.io.File;
 
 /**
  * Created by Shawn on 10/12/2015.
@@ -106,9 +110,11 @@ public class SelectImageDialogFragment extends DialogFragment {
 
         fileUri = Utilities.getOutputMediaFileUri(getActivity()); // create a file to save the image
         if(fileUri == null){
+            Log.d("Debug", "Error creating fileuri for camera intent");
             Toast.makeText(getActivity(), "An Error Occurred", Toast.LENGTH_SHORT).show();
             return null;
         }
+        Log.d("Debug", "fileUri = " + fileUri.toString());
         intent.putExtra(MediaStore.EXTRA_OUTPUT, fileUri); // set the image file name
 
         // start the image capture Intent
@@ -122,8 +128,9 @@ public class SelectImageDialogFragment extends DialogFragment {
                 Log.d("Debug: ", "In Pick Image");
                 if(resultCode == Activity.RESULT_OK) {
                     Log.d("Debug: ", "Result OKay");
-                    imageUri = data.getData();
                     path_name = Utilities.getRealPathFromURI(getActivity(), data.getData());
+                    imageUri = Uri.fromFile(new File(path_name));
+                    Log.d("Debug", "Image Uri: "+ imageUri.toString());
                     if(path_name != null) {
                         path.setText(path_name);
                         Log.d("Debug: ", "Path Name = " + path_name);
@@ -138,14 +145,17 @@ public class SelectImageDialogFragment extends DialogFragment {
                 Log.d("Debug: ", "In Capture Image");
                 if(resultCode == Activity.RESULT_OK) {
                     Log.d("Debug: ", "In Capture Image Result Okay");
-                    path_name = fileUri.getPath();
-                    imageUri = data.getData();
-                    if(path_name != null) {
-                        Log.d("Debug: ", "Pathname  = " + path_name);
-                        path.setText(path_name);
+                    try {
+                        imageUri = fileUri;
+                        path_name = fileUri.getPath();
+                        if (path_name != null && imageUri != null) {
+                            Log.d("Debug: ", "Pathname  = " + path_name);
+                            path.setText(path_name);
+                        } else
+                            Toast.makeText(getActivity(), "Failed selecting image from Camera", Toast.LENGTH_SHORT).show();
+                    }catch(Exception e){
+                        e.printStackTrace();
                     }
-                    else
-                        Toast.makeText(getActivity(), "Failed selecting image from Camera", Toast.LENGTH_SHORT).show();
                 }
             }
     }
