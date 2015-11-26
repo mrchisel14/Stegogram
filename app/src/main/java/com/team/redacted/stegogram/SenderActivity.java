@@ -1,18 +1,16 @@
 package com.team.redacted.stegogram;
 
-import android.app.DialogFragment;
-import android.app.Fragment;
-import android.app.FragmentManager;
+import android.app.Activity;
 import android.content.Intent;
-import android.database.Cursor;
 import android.net.Uri;
-import android.provider.ContactsContract;
+import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.text.method.HideReturnsTransformationMethod;
 import android.text.method.PasswordTransformationMethod;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -24,21 +22,41 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class SenderActivity extends AppCompatActivity implements SelectImageDialogFragment.OnDialogDismissListener {
-    static final int PICK_CONTACT_REQUEST = 0;
-    EditText recipient_text, password, message_box;
-    String phone_num = null, MAX_COUNT = "255", password_str, message, recipients;
+import java.io.File;
+
+public class SenderActivity extends Activity{
+    EditText password, message_box, path;
+    String MAX_COUNT = "255", password_str, message, path_name = null;
+    Uri imageUri = null, fileUri = null;
+    int PICK_IMAGE = 1, CAPTURE_IMAGE = 2;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sender);
-        ImageButton recipient_button = (ImageButton) findViewById(R.id.contacts_button);
+        ImageButton select_image = (ImageButton)findViewById(R.id.select_file);
+        ImageButton take_photo = (ImageButton)findViewById(R.id.take_picture_button);
         CheckBox view_password = (CheckBox)findViewById(R.id.view_password);
         Button send_button = (Button)findViewById(R.id.send_button);
-        message_box = (EditText)findViewById(R.id.message);
         final TextView message_count = (TextView) findViewById(R.id.message_count);
+        path = (EditText)findViewById(R.id.select_path);
+        message_box = (EditText)findViewById(R.id.message);
         password = (EditText)findViewById(R.id.password);
-        recipient_text = (EditText)findViewById(R.id.recipient);
+
+        select_image.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //Search for image in file system and update path
+                getFilePath();
+            }
+        });
+        take_photo.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //call take picture activity and update path name
+                getFilePathTakePicture();
+            }
+        });
 
         final TextWatcher textWatcher = new TextWatcher() {
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -63,12 +81,6 @@ public class SenderActivity extends AppCompatActivity implements SelectImageDial
                     password.setTransformationMethod(HideReturnsTransformationMethod.getInstance());
             }
         });
-        recipient_button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                onClickContactButton();
-            }
-        });
         send_button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -76,58 +88,47 @@ public class SenderActivity extends AppCompatActivity implements SelectImageDial
             }
         });
     }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_sender, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == PICK_CONTACT_REQUEST) {
-            if (resultCode == RESULT_OK) {
-                Uri contactUri = data.getData();
-                String[] projection = {ContactsContract.CommonDataKinds.Phone.NUMBER};
-                Cursor cursor = getContentResolver()
-                        .query(contactUri, projection, null, null, null);
-                cursor.moveToFirst();
-                int column = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER);
-                phone_num = cursor.getString(column);
-                recipient_text.setText(recipient_text.getText() + phone_num + ";");
-                cursor.close();
+        Log.d("Debug: ", "In On Activity Result. Result Code = " + resultCode);
+        if (requestCode == PICK_IMAGE) {
+            Log.d("Debug: ", "In Pick Image");
+            if(resultCode == Activity.RESULT_OK) {
+                Log.d("Debug: ", "Result OKay");
+                path_name = Utilities.getRealPathFromURI(this, data.getData());
+                imageUri = Uri.fromFile(new File(path_name));
+                Log.d("Debug", "Image Uri: "+ imageUri.toString());
+                if(path_name != null) {
+                    path.setText(path_name);
+                    Log.d("Debug: ", "Path Name = " + path_name);
+                }
+                else
+                    Toast.makeText(this, "Failed selecting image from file system", Toast.LENGTH_SHORT).show();
+            }
+            else
+                Toast.makeText(this, "Failed retrieving data from activity", Toast.LENGTH_SHORT).show();
+        }
+        if(requestCode == CAPTURE_IMAGE) {
+            Log.d("Debug: ", "In Capture Image");
+            if(resultCode == Activity.RESULT_OK) {
+                Log.d("Debug: ", "In Capture Image Result Okay");
+                try {
+                    imageUri = fileUri;
+                    path_name = fileUri.getPath();
+                    if (path_name != null && imageUri != null) {
+                        Log.d("Debug: ", "Pathname  = " + path_name);
+                        path.setText(path_name);
+                    } else
+                        Toast.makeText(this, "Failed selecting image from Camera", Toast.LENGTH_SHORT).show();
+                }catch(Exception e){
+                    e.printStackTrace();
+                }
             }
         }
     }
-    void onClickContactButton() {
-        /*Do stuff when someone clicks contact button*/
-        Intent it= new Intent(Intent.ACTION_PICK,  ContactsContract.Contacts.CONTENT_URI);
-        it.setType(ContactsContract.CommonDataKinds.Phone.CONTENT_TYPE);
-        startActivityForResult(it, PICK_CONTACT_REQUEST);
-    }
     void onSendButtonClick() {
-        recipients = recipient_text.getText().toString();
         message = message_box.getText().toString();
         password_str = password.getText().toString();
-        if(recipients == null || recipients.matches("")) {
-            Toast.makeText(this, "No recipients selected", Toast.LENGTH_SHORT).show();
-            return;
-        }
         if(message == null || message.matches("")){
             Toast.makeText(this, "Message cannot be empty", Toast.LENGTH_SHORT).show();
             return;
@@ -135,16 +136,36 @@ public class SenderActivity extends AppCompatActivity implements SelectImageDial
         if(password_str == null || password_str.matches("")){
             Toast.makeText(this, "No password. Message will not be encrypted.", Toast.LENGTH_SHORT).show();
         }
-        SelectImageDialogFragment fragment = new SelectImageDialogFragment();
-        fragment.show(getFragmentManager(), "SelectImage");
-    }
-    public void onDialogDismissListener(String path){
-        if(path != null){
-            message = message_box.getText().toString();
-            password_str = password.getText().toString();
-            Utilities.createStegogramRequest(this, path, password_str, message, Utilities.ENCODE_IMAGE);
+        if(path_name == null){
+            Toast.makeText(this, "No image selected", Toast.LENGTH_SHORT).show();
+            return;
         }
-        else
-            Toast.makeText(this, "No path selected.", Toast.LENGTH_SHORT).show();
+        message = message_box.getText().toString();
+        password_str = password.getText().toString();
+        Utilities.createStegogramRequest(this, imageUri, password_str, message, Utilities.ENCODE_IMAGE);
+    }
+    void getFilePath(){
+        //Open file manager grab path of selected image ensure image is png
+        Intent intent = new Intent();
+        intent.setType("image/*");
+        intent.setAction(Intent.ACTION_GET_CONTENT);
+        startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_IMAGE);
+    }
+    void getFilePathTakePicture(){
+        //open camera return path for picture taken
+        // create Intent to take a picture and return control to the calling application
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+
+        fileUri = Utilities.getOutputMediaFileUri(this); // create a file to save the image
+        if(fileUri == null){
+            Log.d("Debug", "Error creating fileuri for camera intent");
+            Toast.makeText(this, "An Error Occurred", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Log.d("Debug", "fileUri = " + fileUri.toString());
+        intent.putExtra(MediaStore.EXTRA_OUTPUT, fileUri); // set the image file name
+
+        // start the image capture Intent
+        startActivityForResult(intent, CAPTURE_IMAGE);
     }
 }
