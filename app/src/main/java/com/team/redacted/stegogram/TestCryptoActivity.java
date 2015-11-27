@@ -8,8 +8,6 @@ import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Looper;
-import android.os.SystemClock;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -28,8 +26,8 @@ public class TestCryptoActivity extends Activity {
     String path_name, message = "Hello World";
     Uri imageUri;
     EditText path;
-    Bitmap original;
-    Bitmap encoded_image;
+    Bitmap original_image;
+    Bitmap encoded;
     String decoded_message;
     Context a = this;
     @Override
@@ -71,8 +69,8 @@ public class TestCryptoActivity extends Activity {
                 path_name = Utilities.getRealPathFromURI(this, data.getData());
                 imageUri = Uri.fromFile(new File(path_name));
                 ImageView before = (ImageView) findViewById(R.id.before_image);
-                original = Utilities.convertJPEGToPNG(a, BitmapFactory.decodeFile(imageUri.getPath()));
-                before.setImageBitmap(original);
+                original_image = Utilities.convertJPEGToPNG(a, BitmapFactory.decodeFile(imageUri.getPath()));
+                before.setImageBitmap(original_image);
                 Log.d("Debug", "Image Uri: "+ imageUri.toString());
                 if(path_name != null) {
                     path.setText(path_name);
@@ -96,8 +94,8 @@ public class TestCryptoActivity extends Activity {
             protected Void doInBackground(String... params) {
                 // **Code**
                 try{
-                    encoded_image = CryptoEngine.generateStegogram(null, message, original);
-                    decoded_message = CryptoEngine.receiveStegogram(encoded_image);
+                    encoded = CryptoEngine.generateStegogram(null, message, original_image);
+                    decoded_message = CryptoEngine.receiveStegogram(encoded);
 
                 }catch (Exception e){
                     e.printStackTrace();
@@ -112,7 +110,7 @@ public class TestCryptoActivity extends Activity {
             protected void onPostExecute(Void result) {
                 ImageView after = (ImageView)findViewById(R.id.after_image);
                 TextView message_box = (TextView)findViewById(R.id.test_message);
-                after.setImageBitmap(encoded_image);
+                after.setImageBitmap(encoded);
                 message_box.setText(decoded_message);
             }
         }.execute();

@@ -44,7 +44,7 @@ public class CryptoEngine
 	@return the File Path of the saved image
 	*/
 
-    static int CRYPT_ITR = 10000;
+    static int CRYPT_ITR = 10000, BIT_INSERT_MASK = 0xFFFFFFFE;
 	public static Bitmap generateStegogram(String password, String message, Bitmap original) throws IndexOutOfBoundsException
 	{
 		//Generate an editable copy of the image.
@@ -73,10 +73,10 @@ public class CryptoEngine
 		int[] message_data = new int[message.length() * 4];
 		for(int i = 0; i < message.length(); ++i)
 		{
-			message_data[4 * i] = message.charAt(i & 0x0000F000 >> 12);
-			message_data[1 + 4 * i] = message.charAt(i & 0x00000F00 >> 8);
-			message_data[2 + 4 * i] = message.charAt(i & 0x000000F0 >> 4);
-			message_data[3 + 4 * i] = message.charAt(i & 0x0000000F);
+			message_data[4 * i] = (message.charAt(i) & 0x0000F000) >> 12;
+			message_data[1 + 4 * i] = (message.charAt(i) & 0x00000F00) >> 8;
+			message_data[2 + 4 * i] = (message.charAt(i) & 0x000000F0) >> 4;
+			message_data[3 + 4 * i] = message.charAt(i) & 0x0000000F;
 			
 		}
 
@@ -99,24 +99,28 @@ public class CryptoEngine
 			
 			//insert bit 3 into alpha
 			int alpha = Color.alpha(pixel_color);
-			int alpha_insert = (message_data[i] & 0x8) >>> 3; 
+			int alpha_insert = (message_data[i] & 0x8) >>> 3;
+            alpha = alpha & BIT_INSERT_MASK;
 			alpha = alpha | alpha_insert;
 			
 			
 			//insert bit 2 into red
 			int red = Color.red(pixel_color);
-			int red_insert = (message_data[i] & 0x4) >>> 2; 
+			int red_insert = (message_data[i] & 0x4) >>> 2;
+            red = red & BIT_INSERT_MASK;
 			red = red | red_insert;
 			
 			
 			//insert bit 1 into green
 			int green = Color.green(pixel_color);
 			int green_insert = (message_data[i] & 0x2) >>> 1;
+            green = green & BIT_INSERT_MASK;
 			green = green | green_insert;
 			
 			//insert bit 0 into blue
 			int blue = Color.blue(pixel_color);
 			int blue_insert = (message_data[i] & 0x1);
+            blue = blue & BIT_INSERT_MASK;
 			blue = blue | blue_insert;
 			
 			//write final value to pixels
@@ -138,14 +142,13 @@ public class CryptoEngine
 	*/
 	public static String receiveStegogram(Bitmap original)
 	{
-		Bitmap encodedImage = original.copy(Bitmap.Config.ARGB_8888, true);
-		int width = encodedImage.getWidth();
-		int height = encodedImage.getHeight();
+		int width = original.getWidth();
+		int height = original.getHeight();
 		int[] pixels = new int[width * height];
 		int[] message_data = new int[pixels.length / 4];
 		char[] message = new char[message_data.length / 4];
 		char last_char = 'a';
-		
+        original.getPixels(pixels, 0, width, 0, 0, width, height);
 		//ensures stay withing bounds of pixels[]
 		int count = 0;
 		do
@@ -178,7 +181,6 @@ public class CryptoEngine
         Log.d("Debug", "Plain Text:" + message);
         int k_length = 256;
         int s_length = k_length/8;
-        byte [] cipher_text;
         String cipher_text_str = null;
         if(password.length() == 0){
             Log.d("Debug", "No password, skipping encryption");
@@ -200,22 +202,7 @@ public class CryptoEngine
             IvParameterSpec ivParams = new IvParameterSpec(iv);
             Log.d("Debug", "Encrypt: ivparams:" + new String(ivParams.getIV(), "UTF-8")+ "\nLength " + ivParams.getIV().length);
             cipher.init(Cipher.ENCRYPT_MODE, key, ivParams);
-            byte[] ciphertext = cipher.doFinal(message.getBytes("UTF-8"));//UTF-16 increases difficulty of password cracking over UTF-8
-/*
-            ByteArrayOutputStream out = new ByteArrayOutputStream( );
-            Log.d("Debug", "Adding iv: " + new String(iv, "UTF-8"));
-            out.write(iv);//concatenate IV
-            out.write("\u0000".getBytes());
-            Log.d("Debug", "Adding salt: " + new String(salt, "UTF-8"));
-            out.write(salt);//concatenate Salt
-            out.write("\u0000".getBytes());
-            Log.d("Debug", "Adding text: " + new String(ciphertext, "UTF-8"));
-            out.write(ciphertext);//concatenate Cipher Text
-            out.write("\u0000".getBytes()); //add extra null byte to determine if text is encrypted
-            cipher_text = out.toByteArray();
-            out.close();
-            */
-            //cipher_text_str = new String(cipher_text);
+            byte[] ciphertext = cipher.doFinal(message.getBytes("UTF-16"));//UTF-16 increases difficulty of password cracking over UTF-8
             cipher_text_str = Base64.encodeToString(iv, Base64.DEFAULT) + "]" +
                     Base64.encodeToString(salt, Base64.DEFAULT) + "]" +
                     Base64.encodeToString(ciphertext, Base64.DEFAULT);
@@ -247,7 +234,7 @@ public class CryptoEngine
                 Log.d("Debug", "Decrypt: ivparams:" + new String(ivParams.getIV(), "UTF-8") + "\nLength " + ivParams.getIV().length);
                 cipher.init(Cipher.DECRYPT_MODE, key, ivParams);
                 byte[] plaintextBytes = cipher.doFinal(cipherBytes);
-                plaintext = new String(plaintextBytes , "UTF-8");
+                plaintext = new String(plaintextBytes , "UTF-16");
             }catch(Exception e){
                 Log.d("Debug", "Failed to decrypt message");
                 e.printStackTrace();
