@@ -77,9 +77,10 @@ public class Utilities {
                     String ciphertext = null;
                     publishProgress();
                     SystemClock.sleep(5000);
-                    ciphertext = CryptoEngine.receiveStegogram(image_uri.getPath());
+                    Bitmap image = BitmapFactory.decodeFile(image_uri.getPath());
+                    ciphertext = CryptoEngine.receiveStegogram(image);
                     publishProgress();
-                    plaintext = CryptoEngine.decryptmessage(ciphertext);
+                    plaintext = CryptoEngine.decryptMessage(ciphertext, password);
                     SystemClock.sleep(5000);
                     publishProgress();
                 }
@@ -103,7 +104,10 @@ public class Utilities {
                         publishProgress();
                         /*Call Encryption*/
                         encrypted_message = CryptoEngine.encryptMessage(message, password);
-                        Log.d("Debug", "Encrypted Text: " + encrypted_message + "\nlength: " + encrypted_message.length());
+                        Log.d("Debug", "Encrypted Text: " + encrypted_message);
+                        if(encrypted_message != null){
+                            Log.d("Debug", "Length: " + encrypted_message.length());
+                        }
                         Log.d("Debug", "After Encryption");
                         publishProgress();
                         /*Call Encoding encoded_path = func()*/
@@ -119,7 +123,7 @@ public class Utilities {
                     }
                     else{
                         Log.d("Debug", "Failed Converting Image");
-                        Toast.makeText(a,"Failed converting image", Toast.LENGTH_SHORT);
+                        Toast.makeText(a, "Failed converting image", Toast.LENGTH_SHORT);
                     }
                 }
                 return null;
@@ -164,6 +168,7 @@ public class Utilities {
         return -1;
     }
     public static Bitmap convertJPEGToPNG(Context c, Bitmap image){
+        Bitmap png_image = image.copy(Bitmap.Config.ARGB_8888, true);
         try {
             Uri fileUri = getOutputMediaFileUri(c);
             File file = new File(fileUri.getPath());
@@ -172,15 +177,16 @@ public class Utilities {
                     Log.d("Error:","Failed to create new png file");
                 }
             FileOutputStream out = new FileOutputStream(fileUri.getPath());
-            image = getResizedBitmap(image, 640);
-            image.compress(Bitmap.CompressFormat.PNG, 100, out); //100-best quality
+            png_image = getResizedBitmap(png_image, 640);
+            png_image.compress(Bitmap.CompressFormat.PNG, 100, out); //100-best quality
             out.close();
             png_uri = fileUri;
         } catch (Exception e) {
+            Log.d("Debug", "Failed to convert to png");
             e.printStackTrace();
         }
 
-        return image;
+        return png_image;
     }
     public static void sendPictureMessage(Context c){
         Log.d("Debug", "In Send Picture Message");

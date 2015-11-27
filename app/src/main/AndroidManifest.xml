@@ -44,6 +44,16 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.team.redacted.stegogram.MainActivity" />
         </activity>
+        <activity
+            android:screenOrientation="portrait"
+            android:name=".TestCryptoActivity"
+            android:label="TestCryptoActivity"
+            android:parentActivityName=".MainActivity"
+            android:theme="@android:style/Theme.NoTitleBar">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.team.redacted.stegogram.MainActivity" />
+        </activity>
     </application>
 
 </manifest>

@@ -2,7 +2,8 @@
     xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="com.team.redacted.stegogram.SenderActivity"
-    android:background="@color/dark_theme_color">
+    android:background="@color/dark_theme_color"
+    android:focusableInTouchMode="true">
     <RelativeLayout
         android:id="@+id/sender_header"
         android:layout_width="match_parent"
@@ -13,7 +14,7 @@
             android:layout_height="110dp"
             android:scaleType="fitXY"
             android:layout_alignParentTop="true"
-            android:src="@drawable/stegogram_banner"/>
+            android:src="@drawable/stegogram_banner" />
     </RelativeLayout>
     <RelativeLayout
         android:id="@+id/sender_body"

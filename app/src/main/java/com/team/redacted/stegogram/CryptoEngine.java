@@ -10,6 +10,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapFactory.Options;
 import android.graphics.Color;
+import android.util.Log;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
@@ -54,7 +55,7 @@ public class CryptoEngine
 		original.recycle();
 		
 		/*add marker characters to begining and end of string*/
-		String terminal = Character.toString('\u0');
+		String terminal = Character.toString('\u0000');
 		message = message.concat(terminal);
 		
 		/*Image file must be of sufficient size to hold the message,
@@ -136,11 +137,12 @@ public class CryptoEngine
 	*/
 	public static String receiveStegogram(Bitmap original)
 	{
-		int width = encodedImage.width();
-		int height = encodedImage.height();
+		Bitmap encodedImage = original.copy(Bitmap.Config.ARGB_8888, true);
+		int width = encodedImage.getWidth();
+		int height = encodedImage.getHeight();
 		int[] pixels = new int[width * height];
-		int[] message_data = new int[pixels.length() / 4];
-		char[] message = new char[message_data.length() / 4]
+		int[] message_data = new int[pixels.length / 4];
+		char[] message = new char[message_data.length / 4];
 		char last_char = 'a';
 		
 		//ensures stay withing bounds of pixels[]
@@ -159,23 +161,28 @@ public class CryptoEngine
 			//extract the character
 			if(count % 4 == 0 && count != 0)
 			{
-				last_char = (message_data[count - 3] << 12) | (messagemessage_data[count - 2] << 8) | (messagemessage_data[count -1] << 4) | messagemessage_data[count];
+				last_char = (char)((message_data[count - 3] << 12) | (message_data[count - 2] << 8) | (message_data[count -1] << 4) | message_data[count]);
 				message[(count / 4) - 1] = last_char;
 			}
 			
 			
 			++count;
-		}while(last_char != '\0' && count < pixels.length())
+		}while(last_char != '\0' && count < pixels.length);
 	
 	
-	    return imgPath;
+	    return message.toString();
 	}//end method receiveStegogram
 
     public static String encryptMessage(String message, String password){
+        Log.d("Debug", "Plain Text:" + message);
         int k_length = 256;
         int s_length = k_length/8;
         byte [] cipher_text;
         String cipher_text_str = null;
+        if(password.length() == 0){
+            Log.d("Debug", "No password, skipping encryption");
+            return message;
+        }
         try {
             SecureRandom random = new SecureRandom();
             byte[] salt = new byte[s_length];
@@ -185,18 +192,25 @@ public class CryptoEngine
             SecretKeyFactory keyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
             byte[] keyBytes = keyFactory.generateSecret(keySpec).getEncoded();
             SecretKey key = new SecretKeySpec(keyBytes, "AES");
-
+            Log.d("Debug", "Secret Key: " + key.toString());
             Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
             byte[] iv = new byte[cipher.getBlockSize()];
             random.nextBytes(iv);
             IvParameterSpec ivParams = new IvParameterSpec(iv);
+            Log.d("Debug", "Encrypt: ivparams:" + new String(ivParams.getIV(), "UTF-8")+ "\nLength " + ivParams.getIV().length);
             cipher.init(Cipher.ENCRYPT_MODE, key, ivParams);
-            byte[] ciphertext = cipher.doFinal(message.getBytes("UTF-16"));//UTF-16 increases difficulty of password cracking over UTF-8
+            byte[] ciphertext = cipher.doFinal(message.getBytes("UTF-8"));//UTF-16 increases difficulty of password cracking over UTF-8
 
             ByteArrayOutputStream out = new ByteArrayOutputStream( );
+            Log.d("Debug", "Adding iv: " + new String(iv, "UTF-8"));
             out.write(iv);//concatenate IV
+            out.write("\u0000".getBytes());
+            Log.d("Debug", "Adding salt: " + new String(salt, "UTF-8"));
             out.write(salt);//concatenate Salt
+            out.write("\u0000".getBytes());
+            Log.d("Debug", "Adding text: " + new String(ciphertext, "UTF-8"));
             out.write(ciphertext);//concatenate Cipher Text
+            out.write("\u0000".getBytes()); //add extra null byte to determine if text is encrypted
             cipher_text = out.toByteArray();
             out.close();
             cipher_text_str = new String(cipher_text);
@@ -204,10 +218,41 @@ public class CryptoEngine
             e.printStackTrace();
             return null;
         }
+        Log.d("Debug", "Cipher Text:" + cipher_text_str);
         return cipher_text_str;
     }
-	public static String decryptmessage(String ciphertext){
+	public static String decryptMessage(String ciphertext, String password){
+        Log.d("Debug", "Decrypt: cipher text: " + ciphertext);
 		String plaintext = ciphertext;
+        int k_length = 256;
+        if(ciphertext.contains("\u0000")){
+            try {
+                String fields[] = ciphertext.split("\u0000");
+                byte[] salt = fields[1].getBytes();
+                byte[] iv = fields[0].getBytes();
+                byte[] cipherBytes = fields[2].getBytes();
+                Log.d("Debug", "salt:" + new String(salt , "UTF-8") + " iv: " + new String(iv , "UTF-8") + " cipherBytes " + new String(cipherBytes , "UTF-8"));
+                KeySpec keySpec = new PBEKeySpec(password.toCharArray(), salt,
+                        CRYPT_ITR, k_length);
+                SecretKeyFactory keyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
+                byte[] keyBytes = keyFactory.generateSecret(keySpec).getEncoded();
+                SecretKey key = new SecretKeySpec(keyBytes, "AES");
+                Log.d("Debug", "Secret Key: " + key.toString());
+                Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+                IvParameterSpec ivParams = new IvParameterSpec(iv);
+                Log.d("Debug", "Decrypt: ivparams:" + new String(ivParams.getIV(), "UTF-8") + "\nLength " + ivParams.getIV().length);
+                cipher.init(Cipher.DECRYPT_MODE, key, ivParams);
+                byte[] plaintextBytes = cipher.doFinal(cipherBytes);
+                plaintext = new String(plaintextBytes , "UTF-8");
+            }catch(Exception e){
+                Log.d("Debug", "Failed to decrypt message");
+                e.printStackTrace();
+            }
+        }
+        else{
+            Log.d("Debug", "Message not encrypted");
+        }
+        Log.d("Debug", "Decrypt: plain text: " + plaintext);
 		return plaintext;
 	}
 
