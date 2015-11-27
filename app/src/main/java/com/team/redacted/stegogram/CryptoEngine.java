@@ -49,9 +49,9 @@ public class CryptoEngine
 	{
 		//Generate an editable copy of the image.
 		Bitmap encodedImage = original.copy(Bitmap.Config.ARGB_8888, true);	//is editable
-		int width = encodedImage.getWidth();
+        int width = encodedImage.getWidth();
 		int height = encodedImage.getHeight();
-		
+        Bitmap return_image = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
 		//release original image resources
 		original.recycle();
 		
@@ -126,9 +126,15 @@ public class CryptoEngine
 			//write final value to pixels
 			pixels[i] = Color.argb(alpha, red, green, blue);
 		}
-
-        encodedImage.setPixels(pixels, 0, width, 0, 0, width, height);
-		return encodedImage;
+        try {
+            return_image.setPixels(pixels, 0, width, 0, 0, width, height);
+        }catch(Exception e){
+            Log.d("Debug", "Error setting pixels");
+            e.printStackTrace();
+        }
+        int[] pixels2 = new int[width*height];
+        return_image.getPixels(pixels2, 0, width, 0, 0, width, height);
+		return return_image;
 		
 	}//end method receiveStegogram
 
@@ -163,10 +169,10 @@ public class CryptoEngine
 			
 			//every four pixels is a character
 			//extract the character
-			if(count % 4 == 0 && count != 0)
+			if(count % 4 == 3)
 			{
 				last_char = (char)((message_data[count - 3] << 12) | (message_data[count - 2] << 8) | (message_data[count -1] << 4) | message_data[count]);
-				message[(count / 4) - 1] = last_char;
+				message[(count / 3) - 1] = last_char;
 			}
 			
 			
