@@ -45,6 +45,7 @@ public class CryptoEngine
 	*/
 
     static int CRYPT_ITR = 10000, BIT_INSERT_MASK = 0xFFFFFFFE;
+    static int[] encoded_colors, decoded_colors;
 	public static Bitmap generateStegogram(String password, String message, Bitmap original) throws IndexOutOfBoundsException
 	{
 		//Generate an editable copy of the image.
@@ -79,8 +80,6 @@ public class CryptoEngine
 			message_data[3 + 4 * i] = message.charAt(i) & 0x0000000F;
 			
 		}
-
-		/*encryption goes here*/
 		
 		/*insert message into image*/
 		
@@ -92,7 +91,9 @@ public class CryptoEngine
 		//Each color has four 8 bit components
 		//Each nibble in message_data is spread out across the 
 		//lower order bits of the Color components.
-		
+		int[] message_after = new int[message.length()*4];
+        encoded_colors = new int[message_data.length*4];
+        decoded_colors = new int[message_data.length*4];
 		for(int i = 0; i < message_data.length; ++i)
 		{
 			int pixel_color = pixels[i];
@@ -122,11 +123,18 @@ public class CryptoEngine
 			int blue_insert = (message_data[i] & 0x1);
             blue = blue & BIT_INSERT_MASK;
 			blue = blue | blue_insert;
-			
+			encoded_colors[4*i] = alpha;
+            encoded_colors[4*i+1] = red;
+            encoded_colors[4*i+2] = green;
+            encoded_colors[4*i+3] = blue;
 			//write final value to pixels
 			pixels[i] = Color.argb(alpha, red, green, blue);
 		}
+        if(return_image.isPremultiplied()){
+            Log.d("Debug", "Return image is premultiplied");
+        }
         try {
+            return_image.setPremultiplied(false);
             return_image.setPixels(pixels, 0, width, 0, 0, width, height);
         }catch(Exception e){
             Log.d("Debug", "Error setting pixels");
@@ -134,6 +142,7 @@ public class CryptoEngine
         }
         int[] pixels2 = new int[width*height];
         return_image.getPixels(pixels2, 0, width, 0, 0, width, height);
+        comparePixels(pixels, pixels2);
 		return return_image;
 		
 	}//end method receiveStegogram
@@ -154,6 +163,10 @@ public class CryptoEngine
 		int[] message_data = new int[pixels.length / 4];
 		char[] message = new char[message_data.length / 4];
 		char last_char = 'a';
+        original.setPremultiplied(false);
+        if(original.isPremultiplied()){
+            Log.d("Debug", "Decode image is premultiplied");
+        }
         original.getPixels(pixels, 0, width, 0, 0, width, height);
 		//ensures stay withing bounds of pixels[]
 		int count = 0;
@@ -164,8 +177,11 @@ public class CryptoEngine
 			int red = Color.red(pixel_color);
 			int blue = Color.blue(pixel_color);
 			int green = Color.green(pixel_color);
-			
-			message_data[count] = ((alpha & 0x1) << 3) | ((red & 0x1) << 2) | ((blue & 0x1) << 1) | (green & 0x1);
+            decoded_colors[4*count] = alpha;
+            decoded_colors[4*count+1] = red;
+            decoded_colors[4*count+2] = green;
+            decoded_colors[4*count+3] = blue;
+			message_data[count] = ((alpha & 0x1) << 3) | ((red & 0x1) << 2) | ((green & 0x1) << 1) | (blue & 0x1);
 			
 			//every four pixels is a character
 			//extract the character
@@ -178,12 +194,11 @@ public class CryptoEngine
 			
 			++count;
 		}while(last_char != '\0' && count < pixels.length);
-	
-	
-	    return message.toString();
+        colorDump();
+	    return new String(message);
 	}//end method receiveStegogram
 
-    public static String encryptMessage(String message, String password){
+    public static String encryptMessage(String message, String password) {
         Log.d("Debug", "Plain Text:" + message);
         int k_length = 256;
         int s_length = k_length/8;
@@ -252,6 +267,18 @@ public class CryptoEngine
         Log.d("Debug", "Decrypt: plain text: " + plaintext);
 		return plaintext;
 	}
-
+    static void colorDump(){
+        int length = encoded_colors.length;
+        for(int i = 0; i < length; ++i){
+            if(encoded_colors[i] != decoded_colors[i])
+             Log.d("Debug", i + " " + encoded_colors[i] + " " + decoded_colors[i]);
+        }
+    }
+    static void comparePixels(int[] a1, int[] a2){
+        for(int i = 0; i < a1.length;++i){
+            if(a1[i] != a2[i])
+                Log.d("Debug", "Pixel " + a1[i] + " not equal to " + a2[i] + " at index: " + i);
+        }
+    }
 
 }//end class CryptoEngine

@@ -23,7 +23,7 @@ import java.io.File;
  */
 public class TestCryptoActivity extends Activity {
     int PICK_IMAGE = 0;
-    String path_name, message = "Hello World";
+    String path_name, message = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
     Uri imageUri;
     EditText path;
     Bitmap original_image;
@@ -95,6 +95,8 @@ public class TestCryptoActivity extends Activity {
                 // **Code**
                 try{
                     encoded = CryptoEngine.generateStegogram(null, message, original_image);
+                    int[] pixels = new int[encoded.getWidth()*encoded.getHeight()];
+                    encoded.getPixels(pixels, 0, encoded.getWidth(), 0, 0, encoded.getWidth(), encoded.getHeight());
                     decoded_message = CryptoEngine.receiveStegogram(encoded);
 
                 }catch (Exception e){
@@ -110,7 +112,7 @@ public class TestCryptoActivity extends Activity {
             protected void onPostExecute(Void result) {
                 ImageView after = (ImageView)findViewById(R.id.after_image);
                 TextView message_box = (TextView)findViewById(R.id.test_message);
-                after.setImageBitmap(encoded);
+                //after.setImageBitmap(encoded);
                 message_box.setText(decoded_message);
             }
         }.execute();
