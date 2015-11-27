@@ -10,6 +10,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapFactory.Options;
 import android.graphics.Color;
+import android.util.Base64;
 import android.util.Log;
 
 import javax.crypto.Cipher;
@@ -200,7 +201,7 @@ public class CryptoEngine
             Log.d("Debug", "Encrypt: ivparams:" + new String(ivParams.getIV(), "UTF-8")+ "\nLength " + ivParams.getIV().length);
             cipher.init(Cipher.ENCRYPT_MODE, key, ivParams);
             byte[] ciphertext = cipher.doFinal(message.getBytes("UTF-8"));//UTF-16 increases difficulty of password cracking over UTF-8
-
+/*
             ByteArrayOutputStream out = new ByteArrayOutputStream( );
             Log.d("Debug", "Adding iv: " + new String(iv, "UTF-8"));
             out.write(iv);//concatenate IV
@@ -213,25 +214,28 @@ public class CryptoEngine
             out.write("\u0000".getBytes()); //add extra null byte to determine if text is encrypted
             cipher_text = out.toByteArray();
             out.close();
-            cipher_text_str = new String(cipher_text);
+            */
+            //cipher_text_str = new String(cipher_text);
+            cipher_text_str = Base64.encodeToString(iv, Base64.DEFAULT) + "]" +
+                    Base64.encodeToString(salt, Base64.DEFAULT) + "]" +
+                    Base64.encodeToString(ciphertext, Base64.DEFAULT);
         }catch (Exception e){
             e.printStackTrace();
             return null;
         }
-        Log.d("Debug", "Cipher Text:" + cipher_text_str);
         return cipher_text_str;
     }
 	public static String decryptMessage(String ciphertext, String password){
         Log.d("Debug", "Decrypt: cipher text: " + ciphertext);
 		String plaintext = ciphertext;
         int k_length = 256;
-        if(ciphertext.contains("\u0000")){
+        if(ciphertext.contains("]")){
             try {
-                String fields[] = ciphertext.split("\u0000");
-                byte[] salt = fields[1].getBytes();
-                byte[] iv = fields[0].getBytes();
-                byte[] cipherBytes = fields[2].getBytes();
-                Log.d("Debug", "salt:" + new String(salt , "UTF-8") + " iv: " + new String(iv , "UTF-8") + " cipherBytes " + new String(cipherBytes , "UTF-8"));
+                String fields[] = ciphertext.split("]");
+                byte[] iv = Base64.decode(fields[0].getBytes(), Base64.DEFAULT);
+                byte[] salt = Base64.decode(fields[1].getBytes(), Base64.DEFAULT);
+                byte[] cipherBytes = Base64.decode(fields[2].getBytes(), Base64.DEFAULT);
+                Log.d(" iv: " + new String(iv , "UTF-8") + "\nDebug", "salt:" + new String(salt , "UTF-8")  + "\ncipherBytes " + new String(cipherBytes , "UTF-8"));
                 KeySpec keySpec = new PBEKeySpec(password.toCharArray(), salt,
                         CRYPT_ITR, k_length);
                 SecretKeyFactory keyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
