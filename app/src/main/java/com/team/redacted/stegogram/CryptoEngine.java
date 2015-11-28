@@ -168,7 +168,10 @@ public class CryptoEngine
         if(original.isPremultiplied()){
             Log.d("Debug", "Decode image is premultiplied");
         }
-        original.getPixels(pixels, 0, width, 0, 0, width, height);
+        IntBuffer pixel_buffer = IntBuffer.allocate(width * height);
+	original.copyPixelsToBuffer(pixel_buffer);
+	pixels = pixel_buffer.array();
+	
 		//ensures stay withing bounds of pixels[]
 		int count = 0;
 		do
