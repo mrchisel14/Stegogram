@@ -84,8 +84,9 @@ public class CryptoEngine
 		/*insert message into image*/
 		
 		//Convert image pixels into an int array
-		int[] pixels = new int[width * height];
-		encodedImage.getPixels(pixels, 0, width, 0, 0, width, height);
+		IntBuffer pixel_buffer = IntBuffer.allocate(width * height);
+		encodedImage.copyPixelsToBuffer(pixel_buffer);
+		int[] pixels = pixel_buffer.array();
 		
 		//loop through message and pixel arrays in parral
 		//Each color has four 8 bit components
@@ -135,7 +136,7 @@ public class CryptoEngine
         }
         try {
             return_image.setPremultiplied(false);
-            return_image.setPixels(pixels, 0, width, 0, 0, width, height);
+            return_image.copyPixelsFromBuffer(pixel_buffer);
         }catch(Exception e){
             Log.d("Debug", "Error setting pixels");
             e.printStackTrace();
