@@ -23,7 +23,7 @@ import java.io.File;
  */
 public class TestCryptoActivity extends Activity {
     int PICK_IMAGE = 0;
-    String path_name, message = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    String path_name, password = "FJKSJFKLJDF27!*&#", message = "Try not to become a man of success, but rather try to become a man of value. Read more at http://www.brainyquote.com/quotes/authors/a/albert_einstein.html#4mAmHFiW2hwbtvLb.99";
     Uri imageUri;
     EditText path;
     Bitmap original_image;
@@ -94,10 +94,11 @@ public class TestCryptoActivity extends Activity {
             protected Void doInBackground(String... params) {
                 // **Code**
                 try{
-                    encoded = CryptoEngine.generateStegogram(null, message, original_image);
+                    encoded = CryptoEngine.generateStegogram(CryptoEngine.encryptMessage(message, password), original_image);
                     int[] pixels = new int[encoded.getWidth()*encoded.getHeight()];
                     encoded.getPixels(pixels, 0, encoded.getWidth(), 0, 0, encoded.getWidth(), encoded.getHeight());
                     decoded_message = CryptoEngine.receiveStegogram(encoded);
+
 
                 }catch (Exception e){
                     e.printStackTrace();
@@ -112,8 +113,8 @@ public class TestCryptoActivity extends Activity {
             protected void onPostExecute(Void result) {
                 ImageView after = (ImageView)findViewById(R.id.after_image);
                 TextView message_box = (TextView)findViewById(R.id.test_message);
-                //after.setImageBitmap(encoded);
-                message_box.setText(decoded_message);
+                after.setImageBitmap(encoded);
+                message_box.setText(CryptoEngine.decryptMessage(decoded_message, password));
             }
         }.execute();
     }
