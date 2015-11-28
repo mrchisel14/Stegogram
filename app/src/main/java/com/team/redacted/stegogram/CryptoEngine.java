@@ -4,7 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.security.SecureRandom;
 import java.security.spec.KeySpec;
-
+import java.nio.IntBuffer;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -135,15 +135,15 @@ public class CryptoEngine
             Log.d("Debug", "Return image is premultiplied");
         }
         try {
-            return_image.setPremultiplied(false);
+            pixel_buffer = (IntBuffer)pixel_buffer.rewind();
             return_image.copyPixelsFromBuffer(pixel_buffer);
         }catch(Exception e){
             Log.d("Debug", "Error setting pixels");
             e.printStackTrace();
         }
-        int[] pixels2 = new int[width*height];
-        return_image.getPixels(pixels2, 0, width, 0, 0, width, height);
-        comparePixels(pixels, pixels2);
+        IntBuffer pixels2_buffer = IntBuffer.allocate(width * height);
+        return_image.copyPixelsToBuffer(pixels2_buffer);
+        comparePixels(pixels, pixels2_buffer.array());
 		return return_image;
 		
 	}//end method receiveStegogram
@@ -164,7 +164,6 @@ public class CryptoEngine
 		int[] message_data = new int[pixels.length / 4];
 		char[] message = new char[message_data.length / 4];
 		char last_char = 'a';
-        original.setPremultiplied(false);
         if(original.isPremultiplied()){
             Log.d("Debug", "Decode image is premultiplied");
         }
