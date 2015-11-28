@@ -193,7 +193,6 @@ public class Utilities {
         return -1;
     }
     public static Bitmap convertJPEGToPNG(Context c, Bitmap image){
-        Bitmap png_image = image.copy(Bitmap.Config.ARGB_8888, true);
         try {
             Uri fileUri = getOutputMediaFileUri(c);
             File file = new File(fileUri.getPath());
@@ -202,8 +201,8 @@ public class Utilities {
                     Log.d("Error:","Failed to create new png file");
                 }
             FileOutputStream out = new FileOutputStream(fileUri.getPath());
-            png_image = getResizedBitmap(png_image, 640);
-            png_image.compress(Bitmap.CompressFormat.PNG, 100, out); //100-best quality
+            image = getResizedBitmap(image, 640);
+            image.compress(Bitmap.CompressFormat.PNG, 100, out); //100-best quality
             out.close();
             png_uri = fileUri;
         } catch (Exception e) {
@@ -211,7 +210,7 @@ public class Utilities {
             e.printStackTrace();
         }
 
-        return png_image;
+        return image;
     }
     public static void sendPictureMessage(Context c){
         Log.d("Debug", "In Send Picture Message");
@@ -256,7 +255,7 @@ public class Utilities {
         File mediaFile;
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         mediaFile = new File(mediaStorageDir.getPath() + File.separator +
-                "IMG_"+ timeStamp + ".jpg");
+                "IMG_"+ timeStamp + ".png");
         Log.d("Debug", "Media file is " + mediaFile.getPath());
         return Uri.fromFile(mediaFile);
     }
