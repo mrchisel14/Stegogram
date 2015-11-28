@@ -24,7 +24,6 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View v) {
                 //Call SenderActivity
-                CryptoEngine.decryptMessage(CryptoEngine.encryptMessage("hello", "hi"), "hi");
                 senderButtonClick();
             }
         });

@@ -201,7 +201,7 @@ public class Utilities {
                     Log.d("Error:","Failed to create new png file");
                 }
             FileOutputStream out = new FileOutputStream(fileUri.getPath());
-            image = getResizedBitmap(image, 640);
+            image = getResizedBitmap(image, 273);
             image.compress(Bitmap.CompressFormat.PNG, 100, out); //100-best quality
             out.close();
             png_uri = fileUri;
