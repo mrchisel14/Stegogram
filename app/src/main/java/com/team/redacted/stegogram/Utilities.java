@@ -76,12 +76,10 @@ public class Utilities {
                 if(type == DECODE_IMAGE){
                     String ciphertext = null;
                     publishProgress(null);
-                    SystemClock.sleep(5000);
                     Bitmap image = BitmapFactory.decodeFile(image_uri.getPath());
                     ciphertext = CryptoEngine.receiveStegogram(image);
                     publishProgress(null);
                     plaintext = CryptoEngine.decryptMessage(ciphertext, password);
-                    SystemClock.sleep(5000);
                     publishProgress(null);
                 }
                 else if(type == ENCODE_IMAGE){
@@ -95,7 +93,6 @@ public class Utilities {
                     }catch (Exception e){
                         e.printStackTrace();
                     }
-                    SystemClock.sleep(5000);
                     Log.d("Debug", "Finished image compression");
                     if(png_image != null){
                         Bitmap encoded_image = null;
@@ -117,7 +114,7 @@ public class Utilities {
                         /*Call Encoding encoded_path = func()*/
                             boolean error = false;
                             try {
-                                encoded_image = CryptoEngine.generateStegogram(password, encrypted_message, png_image);
+                                encoded_image = CryptoEngine.generateStegogram(encrypted_message, png_image);
                                 convertJPEGToPNG(a, encoded_image); //This writes the file to disk
                             }catch(Exception e){
                                 e.printStackTrace();
