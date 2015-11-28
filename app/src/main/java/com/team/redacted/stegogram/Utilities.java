@@ -72,7 +72,6 @@ public class Utilities {
             @Override
             protected Void doInBackground(String... params) {
                 // **Code**
-                Looper.prepare();
                 if(type == DECODE_IMAGE){
                     String ciphertext = null;
                     publishProgress(null);

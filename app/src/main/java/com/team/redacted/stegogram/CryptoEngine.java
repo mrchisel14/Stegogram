@@ -45,7 +45,9 @@ public class CryptoEngine
 	*/
 
     static int CRYPT_ITR = 10000, BIT_INSERT_MASK = 0xFFFFFFFE;
+    /*debuging code
     static int[] encoded_colors, decoded_colors;
+     */
 	public static Bitmap generateStegogram(String message, Bitmap original) throws IndexOutOfBoundsException
 	{
 		//Generate an editable copy of the image.
@@ -57,8 +59,10 @@ public class CryptoEngine
 		original.recycle();
 		
 		/*add marker characters to begining and end of string*/
-		String terminal = Character.toString('\u0000');
-		message = message.concat(terminal);
+		final String TERMINAL = Character.toString('\u0000');
+        message = TERMINAL.concat(message);
+        message = message.concat(TERMINAL);
+        Log.d("Debug", message);
 		
 		/*Image file must be of sufficient size to hold the message,
 		start code, and end code. This verifies that the image is of
@@ -92,9 +96,11 @@ public class CryptoEngine
 		//Each color has four 8 bit components
 		//Each nibble in message_data is spread out across the 
 		//lower order bits of the Color components.
-		int[] message_after = new int[message.length()*4];
+		//debugging code int[] message_after = new int[message.length()*4];
+
+        /*debugging code
         encoded_colors = new int[message_data.length*4];
-        decoded_colors = new int[message_data.length*4];
+        decoded_colors = new int[message_data.length*4];*/
 		for(int i = 0; i < message_data.length; ++i)
 		{
 			int pixel_color = pixels[i];
@@ -124,16 +130,16 @@ public class CryptoEngine
 			int blue_insert = (message_data[i] & 0x1);
             blue = blue & BIT_INSERT_MASK;
 			blue = blue | blue_insert;
-			encoded_colors[4*i] = alpha;
+
+            /*debugging code
+            encoded_colors[4*i] = alpha;
             encoded_colors[4*i+1] = red;
             encoded_colors[4*i+2] = green;
-            encoded_colors[4*i+3] = blue;
+            encoded_colors[4*i+3] = blue;*/
 			//write final value to pixels
 			pixels[i] = Color.argb(alpha, red, green, blue);
 		}
-        if(return_image.isPremultiplied()){
-            Log.d("Debug", "Return image is premultiplied");
-        }
+
         try {
             pixel_buffer = (IntBuffer)pixel_buffer.rewind();
             return_image.copyPixelsFromBuffer(pixel_buffer);
@@ -144,6 +150,8 @@ public class CryptoEngine
         IntBuffer pixels2_buffer = IntBuffer.allocate(width * height);
         return_image.copyPixelsToBuffer(pixels2_buffer);
         comparePixels(pixels, pixels2_buffer.array());
+        Log.d("Debug", message);
+
 		return return_image;
 		
 	}//end method receiveStegogram
@@ -152,7 +160,7 @@ public class CryptoEngine
 	/**
 	Decodes a text String from an image file
 	
-	@param Image from which text will be decoded.
+	@param Bitmap image from which text will be decoded.
 	
 	@return decoded and decrypted text string.
 	*/
@@ -164,9 +172,7 @@ public class CryptoEngine
 		int[] message_data = new int[pixels.length / 4];
 		char[] message = new char[message_data.length / 4];
 		char last_char = 'a';
-        if(original.isPremultiplied()){
-            Log.d("Debug", "Decode image is premultiplied");
-        }
+
         IntBuffer pixel_buffer = IntBuffer.allocate(width * height);
 	original.copyPixelsToBuffer(pixel_buffer);
 	pixels = pixel_buffer.array();
@@ -180,10 +186,13 @@ public class CryptoEngine
 			int red = Color.red(pixel_color);
 			int blue = Color.blue(pixel_color);
 			int green = Color.green(pixel_color);
+
+            /*debugging code
             decoded_colors[4*count] = alpha;
             decoded_colors[4*count+1] = red;
             decoded_colors[4*count+2] = green;
-            decoded_colors[4*count+3] = blue;
+            decoded_colors[4*count+3] = blue;*/
+
 			message_data[count] = ((alpha & 0x1) << 3) | ((red & 0x1) << 2) | ((green & 0x1) << 1) | (blue & 0x1);
 			
 			//every four pixels is a character
@@ -193,12 +202,25 @@ public class CryptoEngine
 				last_char = (char)((message_data[count - 3] << 12) | (message_data[count - 2] << 8) | (message_data[count -1] << 4) | message_data[count]);
 				message[(count / 3) - 1] = last_char;
 			}
-			
+
+            //check to see if first character is null
+            //if not, there is no message so the scan should terminate
+            if(count == 3 && last_char != '\u0000')
+            {
+                Log.d("Debug", "Count: " + count + ", last_char: " + last_char);
+                message = " No Message Found".toCharArray();//need padded char because method returns substring(1)
+                break;
+            }
 			
 			++count;
-		}while(last_char != '\0' && count < pixels.length);
-        colorDump();
-	    return new String(message);
+            //skip first null char but terminate on terminal null char
+            //or terminate after reaching end of picture
+		}while(((last_char == '\0' && (count >= 4 && count <=8)) || (last_char != '\0') ) && count < pixels.length);
+
+        Log.d("Debug", new String(message));
+        /*debugging code
+        colorDump();*/
+	    return new String(message).substring(1);//remove prepended null char
 	}//end method receiveStegogram
 
     public static String encryptMessage(String message, String password) {
@@ -257,8 +279,13 @@ public class CryptoEngine
                 IvParameterSpec ivParams = new IvParameterSpec(iv);
                 Log.d("Debug", "Decrypt: ivparams:" + new String(ivParams.getIV(), "UTF-8") + "\nLength " + ivParams.getIV().length);
                 cipher.init(Cipher.DECRYPT_MODE, key, ivParams);
-                byte[] plaintextBytes = cipher.doFinal(cipherBytes);
-                plaintext = new String(plaintextBytes , "UTF-16");
+                try {
+                    byte[] plaintextBytes = cipher.doFinal(cipherBytes);
+                    plaintext = new String(plaintextBytes, "UTF-16");
+                }catch (Exception e){
+                    plaintext = "Incorrect Password";
+                    e.printStackTrace();
+                }
             }catch(Exception e){
                 Log.d("Debug", "Failed to decrypt message");
                 e.printStackTrace();
@@ -271,11 +298,12 @@ public class CryptoEngine
 		return plaintext;
 	}
     static void colorDump(){
+        /*debugging code
         int length = encoded_colors.length;
         for(int i = 0; i < length; ++i){
             if(encoded_colors[i] != decoded_colors[i])
              Log.d("Debug", i + " " + encoded_colors[i] + " " + decoded_colors[i]);
-        }
+        }*/
     }
     static void comparePixels(int[] a1, int[] a2){
         for(int i = 0; i < a1.length;++i){
