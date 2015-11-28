@@ -46,7 +46,7 @@ public class CryptoEngine
 
     static int CRYPT_ITR = 10000, BIT_INSERT_MASK = 0xFFFFFFFE;
     static int[] encoded_colors, decoded_colors;
-	public static Bitmap generateStegogram(String password, String message, Bitmap original) throws IndexOutOfBoundsException
+	public static Bitmap generateStegogram(String message, Bitmap original) throws IndexOutOfBoundsException
 	{
 		//Generate an editable copy of the image.
 		Bitmap encodedImage = original.copy(Bitmap.Config.ARGB_8888, true);	//is editable
