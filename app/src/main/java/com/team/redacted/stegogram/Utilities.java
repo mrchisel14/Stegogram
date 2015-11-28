@@ -37,7 +37,7 @@ public class Utilities {
     public static int DECODE_IMAGE = 0, ENCODE_IMAGE = 1;
     static int index = 0, prog_val_encode [] = {0, 10, 40, 40, 10}, prog_val_decode[] = {40, 40, 20};
     public final static String status_encode [] = {
-      "Converting Image", "Encrypting Data", "Encoding Data", "Sending Image", "Finished"
+      "Converting Image", "Encrypting Data", "Encoding Data", "Generating Image", "Finished"
     }, status_decode [] = {
           "Decoding Image", "Decrypting Data", "Finishing"
     };
@@ -61,7 +61,7 @@ public class Utilities {
         final TextView prog_status = (TextView)v.findViewById(R.id.progress_text);
         prog_bar.setMax(100);
         prog_bar.setProgress(0);
-        new AsyncTask<String, Void, Void>(){
+        new AsyncTask<String, String, Void>(){
             @Override
             protected void onPreExecute() {
                 super.onPreExecute();
@@ -75,18 +75,18 @@ public class Utilities {
                 Looper.prepare();
                 if(type == DECODE_IMAGE){
                     String ciphertext = null;
-                    publishProgress();
+                    publishProgress(null);
                     SystemClock.sleep(5000);
                     Bitmap image = BitmapFactory.decodeFile(image_uri.getPath());
                     ciphertext = CryptoEngine.receiveStegogram(image);
-                    publishProgress();
+                    publishProgress(null);
                     plaintext = CryptoEngine.decryptMessage(ciphertext, password);
                     SystemClock.sleep(5000);
-                    publishProgress();
+                    publishProgress(null);
                 }
                 else if(type == ENCODE_IMAGE){
                     Log.d("Debug", "Encode Image Entered");
-                    publishProgress();
+                    publishProgress(null);
 
                     Bitmap png_image = null;
                     try{
@@ -101,51 +101,80 @@ public class Utilities {
                         Bitmap encoded_image = null;
                         String encrypted_message = null;
                         Log.d("Debug", "Png Not null");
-                        publishProgress();
+                        publishProgress(null);
                         /*Call Encryption*/
-                        encrypted_message = CryptoEngine.encryptMessage(message, password);
-                        Log.d("Debug", "Encrypted Text: " + encrypted_message);
-                        if(encrypted_message != null){
-                            Log.d("Debug", "Length: " + encrypted_message.length());
+                        try {
+                            encrypted_message = CryptoEngine.encryptMessage(message, password);
+                        }catch(Exception e){
+                            e.printStackTrace();
                         }
-                        Log.d("Debug", "After Encryption");
-                        publishProgress();
+
+                        if(encrypted_message != null){
+                            Log.d("Debug", "Encrypted Text: " + encrypted_message);
+                            Log.d("Debug", "Length: " + encrypted_message.length());
+                            Log.d("Debug", "After Encryption");
+                            publishProgress(null);
                         /*Call Encoding encoded_path = func()*/
-                        encoded_image = CryptoEngine.generateStegogram(password, encrypted_message, png_image);
-                        convertJPEGToPNG(a, encoded_image); //This writes the file to disk
-                        Log.d("Debug", "After Encoding");
-                        publishProgress();
+                            boolean error = false;
+                            try {
+                                encoded_image = CryptoEngine.generateStegogram(password, encrypted_message, png_image);
+                                convertJPEGToPNG(a, encoded_image); //This writes the file to disk
+                            }catch(Exception e){
+                                e.printStackTrace();
+                                publishProgress("Failed to encode image");
+                                error = true;
+                            }
+                            if(!error) {
+                                Log.d("Debug", "After Encoding");
+                                publishProgress(null);
                         /*Send Image*/
-                        SystemClock.sleep(5000);
-                        sendPictureMessage(a);
-                        Log.d("Debug", "After Send Image");
-                        publishProgress();
+                                SystemClock.sleep(5000);
+                                try {
+                                    sendPictureMessage(a);
+                                }catch(Exception e){
+                                    e.printStackTrace();
+                                    publishProgress("Failed to Generate Message");
+                                    error = true;
+                                }
+                                Log.d("Debug", "After Send Image");
+                                if(!error)publishProgress(null);
+                            }
+                        }
+                        else{
+                            Log.d("Debug", "Failed to encrypt message");
+                            publishProgress("Failed to encrypt message");
+                        }
+
                     }
                     else{
                         Log.d("Debug", "Failed Converting Image");
-                        Toast.makeText(a, "Failed converting image", Toast.LENGTH_SHORT);
+                        publishProgress("Failed converting image");
                     }
                 }
                 return null;
             }
-            protected void onProgressUpdate(Void... progress) {
+            protected void onProgressUpdate(String... progress) {
                 super.onProgressUpdate();
                 Log.d("Debug", "On Progress Update");
-                if(type == ENCODE_IMAGE) {
-                    prog_bar.incrementProgressBy(prog_val_encode[index]);
-                    prog_status.setText(status_encode[index]);
-                }
-                else if(type == DECODE_IMAGE){
-                    prog_bar.incrementProgressBy(prog_val_decode[index]);
-                    prog_status.setText(status_decode[index]);
-                    if(plaintext != null){
-                        DisplayMessageDialogFragment f = new DisplayMessageDialogFragment();
-                        f.decoded_message = plaintext;
-                        plaintext = null;
-                        f.show(a.getFragmentManager(), "Message");
+                if(progress == null) {
+                    if (type == ENCODE_IMAGE) {
+                        prog_bar.incrementProgressBy(prog_val_encode[index]);
+                        prog_status.setText(status_encode[index]);
+                    } else if (type == DECODE_IMAGE) {
+                        prog_bar.incrementProgressBy(prog_val_decode[index]);
+                        prog_status.setText(status_decode[index]);
+                        if (plaintext != null) {
+                            DisplayMessageDialogFragment f = new DisplayMessageDialogFragment();
+                            f.decoded_message = plaintext;
+                            plaintext = null;
+                            f.show(a.getFragmentManager(), "Message");
+                        }
                     }
+                    ++index;
                 }
-                ++index;
+                else{
+                    new Toast(a).makeText(a, progress.toString(), Toast.LENGTH_LONG).show();
+                }
             }
 
             protected void onPostExecute(Void result) {

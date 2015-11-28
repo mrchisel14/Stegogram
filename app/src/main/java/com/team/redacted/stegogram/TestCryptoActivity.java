@@ -47,7 +47,7 @@ public class TestCryptoActivity extends Activity {
         test_button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                test();
+                if(original_image  != null)test();
             }
         });
 
