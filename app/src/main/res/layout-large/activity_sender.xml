@@ -36,6 +36,7 @@
                     android:layout_height="wrap_content"
                     android:text="Select Image: "
                     android:textSize="20dp"
+                    android:layout_marginTop="20dp"
                     android:textColor="@color/label_text" />
                 <ImageButton
                     android:id="@+id/take_picture_button"
@@ -65,9 +66,9 @@
                     android:verticalScrollbarPosition="right"
                     android:id="@+id/message"
                     android:layout_width="match_parent"
-                    android:layout_height="110dp"
+                    android:layout_height="500dp"
                     android:layout_below="@id/select_path"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="20dp"
                     android:gravity="top"
                     android:maxLength="255"
                     android:inputType="textMultiLine"
@@ -86,7 +87,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_below="@id/message_count"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="20dp"
                     android:textSize="20dp"
                     android:textColor="@color/label_text"
                     android:text="Password:"/>
@@ -111,6 +112,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_below="@id/password"
+                    android:layout_marginTop="20dp"
                     android:textColor="@color/label_text"
                     android:text="View Password"/>
                 <Button
