@@ -19,7 +19,7 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
         Button send_btn = (Button) findViewById(R.id.SenderButton);
         Button receive_btn = (Button) findViewById(R.id.ReceiverButton);
-        Button test_btn = (Button)findViewById(R.id.test);
+        //Debug code Button test_btn = (Button)findViewById(R.id.test);
         send_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -34,19 +34,21 @@ public class MainActivity extends Activity {
                 receiverButtonClick();
             }
         });
+        /*Debug code
         test_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 test();
             }
-        });
+        });*/
 
 
     }
+    /*debug code
     void test(){
         Intent intent = new Intent(this, TestCryptoActivity.class);
         startActivity(intent);
-    }
+    }*/
     void senderButtonClick(){
         Intent sIntent = new Intent(this, SenderActivity.class);
         startActivity(sIntent);

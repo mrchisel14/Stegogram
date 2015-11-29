@@ -7,6 +7,7 @@ import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Editable;
+import android.text.InputType;
 import android.text.TextWatcher;
 import android.text.method.HideReturnsTransformationMethod;
 import android.text.method.PasswordTransformationMethod;
@@ -34,6 +35,9 @@ public class SenderActivity extends Activity{
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sender);
+        Intent intent = getIntent();
+        String action = intent.getAction();
+        String type = intent.getType();
         ImageButton select_image = (ImageButton)findViewById(R.id.select_file);
         ImageButton take_photo = (ImageButton)findViewById(R.id.take_picture_button);
         CheckBox view_password = (CheckBox)findViewById(R.id.view_password);
@@ -42,6 +46,24 @@ public class SenderActivity extends Activity{
         path = (EditText)findViewById(R.id.select_path);
         message_box = (EditText)findViewById(R.id.message);
         password = (EditText)findViewById(R.id.password);
+        if(Intent.ACTION_VIEW.equals(action) || intent.ACTION_GET_CONTENT.equals(action)){
+            if(type.startsWith("image/")){
+                path_name = Utilities.getRealPathFromURI(this, intent.getData());
+                imageUri = Uri.fromFile(new File(path_name));
+                select_image.setVisibility(View.INVISIBLE);
+                take_photo.setVisibility(View.INVISIBLE);
+                path.setText(path_name);
+                path.setInputType(InputType.TYPE_NULL);
+            }
+        }
+        else if(intent.ACTION_SEND.equals(action)){
+            path_name = Utilities.getRealPathFromURI(this, (Uri) intent.getParcelableExtra(Intent.EXTRA_STREAM));
+            imageUri = Uri.fromFile(new File(path_name));
+            select_image.setVisibility(View.INVISIBLE);
+            take_photo.setVisibility(View.INVISIBLE);
+            path.setText(path_name);
+            path.setInputType(InputType.TYPE_NULL);
+        }
 
         select_image.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -105,8 +127,6 @@ public class SenderActivity extends Activity{
                 else
                     Toast.makeText(this, "Failed selecting image from file system", Toast.LENGTH_SHORT).show();
             }
-            else
-                Toast.makeText(this, "Failed retrieving data from activity", Toast.LENGTH_SHORT).show();
         }
         if(requestCode == CAPTURE_IMAGE) {
             Log.d("Debug: ", "In Capture Image");

@@ -2,10 +2,12 @@
     <string name="app_name">Stegogram</string>
     <string name="sender_button">Send Message</string>
     <string name="receiver_button">Decode Message</string>
-    <string name="title_activity_receiver">ReceiverActivity</string>
+    <string name="title_activity_receiver">Decode</string>
 
     <string name="hello_world">Hello world!</string>
-    <string name="title_activity_sender">SenderActivity</string>
+    <string name="title_activity_sender">Encode</string>
     <string name="recipient_label">Recipient</string>
     <string name="footer_text">Created by: {Redacted}</string>
+    <string name="intent_receiver">Stegogram Receiver</string>
+
 </resources>

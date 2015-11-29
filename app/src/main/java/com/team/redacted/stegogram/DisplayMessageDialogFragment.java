@@ -40,6 +40,7 @@ public class DisplayMessageDialogFragment extends DialogFragment {
             @Override
             public void onClick(View v) {
                 dismiss();
+                getActivity().finish();
             }
         });
         builder.setView(v);
