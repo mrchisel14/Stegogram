@@ -19,6 +19,7 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
         Button send_btn = (Button) findViewById(R.id.SenderButton);
         Button receive_btn = (Button) findViewById(R.id.ReceiverButton);
+        Button settings_btn = (Button)findViewById(R.id.SettingsButton);
         //Debug code Button test_btn = (Button)findViewById(R.id.test);
         send_btn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -32,6 +33,12 @@ public class MainActivity extends Activity {
             public void onClick(View v) {
                 //Call ReceiverActivity
                 receiverButtonClick();
+            }
+        });
+        settings_btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                settingsButtonClick();
             }
         });
         /*Debug code
@@ -56,5 +63,9 @@ public class MainActivity extends Activity {
     void receiverButtonClick(){
         Intent rIntent = new Intent(this, ReceiverActivity.class);
         startActivity(rIntent);
+    }
+    void settingsButtonClick(){
+        Intent intent = new Intent(this, SettingsActivity.class);
+        startActivity(intent);
     }
 }

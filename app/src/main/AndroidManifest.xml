@@ -85,6 +85,12 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.team.redacted.stegogram.MainActivity" />
         </activity>
+        <activity android:name=".SettingsActivity"
+            android:label="Settings"
+            android:theme="@style/Theme.AppCompat">
+
+        </activity>
+
     </application>
 
 

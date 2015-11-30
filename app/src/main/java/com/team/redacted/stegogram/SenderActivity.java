@@ -1,19 +1,24 @@
 package com.team.redacted.stegogram;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.AsyncTask;
+import android.os.SystemClock;
+import android.preference.PreferenceManager;
 import android.provider.MediaStore;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Editable;
+import android.text.InputFilter;
 import android.text.InputType;
 import android.text.TextWatcher;
 import android.text.method.HideReturnsTransformationMethod;
 import android.text.method.PasswordTransformationMethod;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -29,8 +34,9 @@ public class SenderActivity extends Activity{
     EditText password, message_box, path;
     String MAX_COUNT = "255", password_str, message, path_name = null;
     Uri imageUri = null, fileUri = null;
-    int PICK_IMAGE = 1, CAPTURE_IMAGE = 2;
-
+    Bitmap png_bitmap;
+    int PICK_IMAGE = 1, CAPTURE_IMAGE = 2, compression_length = 0;
+    TextView message_count;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -42,7 +48,7 @@ public class SenderActivity extends Activity{
         ImageButton take_photo = (ImageButton)findViewById(R.id.take_picture_button);
         CheckBox view_password = (CheckBox)findViewById(R.id.view_password);
         Button send_button = (Button)findViewById(R.id.send_button);
-        final TextView message_count = (TextView) findViewById(R.id.message_count);
+        message_count = (TextView) findViewById(R.id.message_count);
         path = (EditText)findViewById(R.id.select_path);
         message_box = (EditText)findViewById(R.id.message);
         password = (EditText)findViewById(R.id.password);
@@ -64,7 +70,10 @@ public class SenderActivity extends Activity{
             path.setText(path_name);
             path.setInputType(InputType.TYPE_NULL);
         }
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        compression_length = Integer.parseInt(prefs.getString("compression_type", "273"));
 
+        message_count.setText("0/"+MAX_COUNT);
         select_image.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -119,6 +128,15 @@ public class SenderActivity extends Activity{
                 Log.d("Debug: ", "Result OKay");
                 path_name = Utilities.getRealPathFromURI(this, data.getData());
                 imageUri = Uri.fromFile(new File(path_name));
+                png_bitmap = getPngBitmap(this);
+                int calculated = png_bitmap.getWidth()*png_bitmap.getHeight()-50;
+                InputFilter[] fArray = new InputFilter[1];
+                fArray[0] = new InputFilter.LengthFilter(calculated);
+                message_box.setFilters(fArray);
+                MAX_COUNT = String.valueOf(calculated);
+                if(Integer.parseInt(MAX_COUNT) > 1000){
+                    MAX_COUNT = String.valueOf(1000);
+                }
                 Log.d("Debug", "Image Uri: "+ imageUri.toString());
                 if(path_name != null) {
                     path.setText(path_name);
@@ -135,6 +153,15 @@ public class SenderActivity extends Activity{
                 try {
                     imageUri = fileUri;
                     path_name = fileUri.getPath();
+                    png_bitmap = getPngBitmap(this);
+                    int calculated = png_bitmap.getWidth()*png_bitmap.getHeight()-50;
+                    InputFilter[] fArray = new InputFilter[1];
+                    fArray[0] = new InputFilter.LengthFilter(calculated);
+                    message_box.setFilters(fArray);
+                    MAX_COUNT = String.valueOf(calculated);
+                    if(Integer.parseInt(MAX_COUNT) > 1000){
+                        MAX_COUNT = String.valueOf(1000);
+                    }
                     if (path_name != null && imageUri != null) {
                         Log.d("Debug: ", "Pathname  = " + path_name);
                         path.setText(path_name);
@@ -162,7 +189,8 @@ public class SenderActivity extends Activity{
         }
         message = message_box.getText().toString();
         password_str = password.getText().toString();
-        Utilities.createStegogramRequest(this, imageUri, password_str, message, Utilities.ENCODE_IMAGE);
+        Utilities.MAX_COMPRESSION_WIDTH = compression_length;
+        Utilities.createStegogramRequest(this, png_bitmap, password_str, message, Utilities.ENCODE_IMAGE);
     }
     void getFilePath(){
         //Open file manager grab path of selected image ensure image is png
@@ -187,5 +215,9 @@ public class SenderActivity extends Activity{
 
         // start the image capture Intent
         startActivityForResult(intent, CAPTURE_IMAGE);
+    }
+    Bitmap getPngBitmap(final Context c){
+        Bitmap ret = Utilities.convertJPEGToPNG(c, BitmapFactory.decodeFile(imageUri.getPath()));
+        return ret;
     }
 }

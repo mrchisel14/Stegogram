@@ -3,6 +3,7 @@ package com.team.redacted.stegogram;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.method.HideReturnsTransformationMethod;
@@ -21,7 +22,7 @@ import android.widget.Toast;
  */
 public class DecodeSelectPasswordFragment extends DialogFragment {
     EditText password_box;
-    Uri imageUri;
+    Bitmap png;
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
@@ -59,14 +60,14 @@ public class DecodeSelectPasswordFragment extends DialogFragment {
     }
     void decodeMessage(){
         String password = password_box.getText().toString();
-        if(imageUri == null){
+        if(png == null){
             Toast.makeText(getActivity(), "Failed opening image", Toast.LENGTH_SHORT);
             dismiss();
         }
-        if (password ==  null || password.matches("")) {
+        if (password == null || password.matches("")) {
             Toast.makeText(getActivity(), "No password specified", Toast.LENGTH_SHORT);
         }
-        Utilities.createStegogramRequest(getActivity(), imageUri, password, null, Utilities.DECODE_IMAGE);
+        Utilities.createStegogramRequest(getActivity(), png, password, null, Utilities.DECODE_IMAGE);
         dismiss();
     }
 }

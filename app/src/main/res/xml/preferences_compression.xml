@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<ListPreference
+    android:title="Select Desired Compression Type"
+    android:key="compression_type"
+    android:defaultValue="273"
+    android:entries="@array/CompressionEntries"
+    android:entryValues="@array/CompressionValues">
+
+</ListPreference>
+</PreferenceScreen>

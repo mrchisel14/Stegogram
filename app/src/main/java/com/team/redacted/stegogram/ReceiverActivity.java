@@ -1,9 +1,13 @@
 package com.team.redacted.stegogram;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.method.HideReturnsTransformationMethod;
@@ -93,7 +97,7 @@ public class ReceiverActivity extends Activity {
         if (password ==  null || password.matches("")) {
             Toast.makeText(this, "No password specified", Toast.LENGTH_SHORT);
         }
-        Utilities.createStegogramRequest(this, imageUri, password, null, Utilities.DECODE_IMAGE);
+        Utilities.createStegogramRequest(this, getPngBitmap(this), password, null, Utilities.DECODE_IMAGE);
     }
 
     @Override
@@ -118,7 +122,11 @@ public class ReceiverActivity extends Activity {
     void handleDecode(Intent intent){
         imageUri = Uri.fromFile(new File(Utilities.getRealPathFromURI(this, intent.getData())));
         DecodeSelectPasswordFragment f = new DecodeSelectPasswordFragment();
-        f.imageUri = imageUri;
+        f.png = getPngBitmap(this);
         f.show(getFragmentManager(), "Decode");
+    }
+    Bitmap getPngBitmap(final Context c){
+        Bitmap ret = Utilities.convertJPEGToPNG(c, BitmapFactory.decodeFile(imageUri.getPath()));
+        return ret;
     }
 }

@@ -9,5 +9,14 @@
     <string name="recipient_label">Recipient</string>
     <string name="footer_text">Created by: {Redacted}</string>
     <string name="intent_receiver">Stegogram Receiver</string>
-
+    <string-array name="CompressionEntries">
+        <item>Compress for MMS</item>
+        <item>Compress for email</item>
+        <item>Do not compress</item>
+    </string-array>
+    <string-array name="CompressionValues">
+        <item>273</item>
+        <item>1500</item>
+        <item>0</item>
+    </string-array>
 </resources>

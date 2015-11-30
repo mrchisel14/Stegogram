@@ -34,7 +34,7 @@ import java.util.Date;
  * Created by Shawn on 10/16/2015.
  */
 public class Utilities {
-    public static int DECODE_IMAGE = 0, ENCODE_IMAGE = 1;
+    public static int DECODE_IMAGE = 0, ENCODE_IMAGE = 1, MAX_COMPRESSION_WIDTH = 273;//273 mms, 1500 email, 0 do not compress
     static int index = 0, prog_val_encode [] = {0, 10, 40, 40, 10}, prog_val_decode[] = {40, 40, 20};
     public final static String status_encode [] = {
       "Converting Image", "Encrypting Data", "Encoding Data", "Generating Image", "Finished"
@@ -44,13 +44,13 @@ public class Utilities {
     static Uri png_uri = null;
     static String plaintext = null;
 
-    public static int createStegogramRequest(final Activity a, final Uri image_uri, String password, String message, final int type){
+    public static int createStegogramRequest(final Activity a, final Bitmap png, String password, String message, final int type){
         final ProgressDialog fragment = new ProgressDialog();
-        fragment.setArgs(a, image_uri, password, message, type);
+        fragment.setArgs(a, png, password, message, type);
         fragment.show(a.getFragmentManager(), "ProgressBar");
         return 0;
     }
-    public static int performRequest(final ProgressDialog fragment, final Activity a, final Uri image_uri, final String password, final String message, final int type){
+    public static int performRequest(final ProgressDialog fragment, final Activity a, final Bitmap png, final String password, final String message, final int type){
         View v = fragment.view;
         if(v == null){
             Log.d("Debug", "V is null");
@@ -75,7 +75,7 @@ public class Utilities {
                 if(type == DECODE_IMAGE){
                     String ciphertext = null;
                     publishProgress(null);
-                    Bitmap image = BitmapFactory.decodeFile(image_uri.getPath());
+                    Bitmap image = png;
                     ciphertext = CryptoEngine.receiveStegogram(image);
                     publishProgress(null);
                     plaintext = CryptoEngine.decryptMessage(ciphertext, password);
@@ -85,13 +85,7 @@ public class Utilities {
                     Log.d("Debug", "Encode Image Entered");
                     publishProgress(null);
 
-                    Bitmap png_image = null;
-                    try{
-                        Bitmap image = BitmapFactory.decodeFile(image_uri.getPath());
-                        png_image = convertJPEGToPNG(a, image);
-                    }catch (Exception e){
-                        e.printStackTrace();
-                    }
+                    Bitmap png_image = png;
                     Log.d("Debug", "Finished image compression");
                     if(png_image != null){
                         Bitmap encoded_image = null;
@@ -201,7 +195,9 @@ public class Utilities {
                     Log.d("Error:","Failed to create new png file");
                 }
             FileOutputStream out = new FileOutputStream(fileUri.getPath());
-            image = getResizedBitmap(image, 273);
+            Log.d("Debug", "Compressing to " + MAX_COMPRESSION_WIDTH);
+            if(MAX_COMPRESSION_WIDTH != 0)
+                image = getResizedBitmap(image, MAX_COMPRESSION_WIDTH);
             image.compress(Bitmap.CompressFormat.PNG, 100, out); //100-best quality
             out.close();
             png_uri = fileUri;
